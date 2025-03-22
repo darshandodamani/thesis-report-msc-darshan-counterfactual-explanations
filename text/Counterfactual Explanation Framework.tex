@@ -1,0 +1,34 @@
+A simple and naive approach to generating counterfactual explanations is searching by trial and error. This approach involves randomly changing feature values of the instance of interest and stopping when the desired output is predicted.
+
+\section{LIME based masking on Images}
+LIME stands for Local Interpretable Model-agnostic Explanations. It is used to explain the predictions of black-box models by perturbing the input and learning a simplified local surrogate model. 
+In my thesis I am using the lime based image masking as follows,
+\begin{enumerate}
+    \item Superpixel Segmentation
+    \item Image Perturbation
+    \item Model Prediction for Perturbed Images
+    \item 
+\end{enumerate}
+
+
+\section{LIME based masking on Latent Features}
+\begin{itemize}
+    \item LIME provides feature importance scores that indicate how much each feature contributes to the model's decision. 
+    \item A positive weights means the features supports the original prediction, while negative weight suggest it pushes the model towards another class.
+    \item Masking positive influence disrupt the confidence of the model in the original class, making it more likely to switch to a different class. 
+    \item This approach helps in counterfactual explanations because it answers the question: "What features should be changed to flip the decision?"
+\end{itemize}
+
+\section{Grid-based Masking}
+Grid-based masking is chosen to systematically identify critical regions in an image that influence the model’s prediction. Instead of masking arbitrary pixels, the image is divided into a grid of fixed-size patches for structured analysis. This approach helps generate counterfactual explanations by selectively modifying different parts of the image.
+
+Strategy
+The image is divided into a structured grid with equal-sized patches. Two grid resolutions are used to balance localization accuracy and computational efficiency:
+\begin{itemize}
+    \item Fine-Grained Grid (10 × 5): Small patches help in detecting localized changes.
+    \item Coarse Grid (4 × 2): Larger patches identify broader regions if smaller ones fail.
+\end{itemize}
+This hierarchical approach ensures that both fine and coarse regions are analyzed, improving the reliability of counterfactual explanations.
+
+Pseudocode for Grid-based Masking algorithm
+
