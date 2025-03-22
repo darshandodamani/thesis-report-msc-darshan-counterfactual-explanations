@@ -57,21 +57,39 @@ where $\theta_{\text{STOP}}$ is the threshold for the brake value, $\theta_{\tex
 
 These criteria were used to ensure a clear classification of driving actions for both binary and multi-class analysis. The thresholds were determined using either a quantile method, where thresholds were dynamically set based on quantiles of the control data, or a fixed method, where thresholds were manually set.
 
-\section{Variational Autoencoder (VAE)} \label{Section Variational Autoencoder (VAE)}
-To generate plausible and semantically meaningful counterfactual explanations, we employ a Variational Autoencoder (VAE) as the backbone of our approach. This design is inspired by the Contrastive Explanation Method (CEM) proposed by Dhurandhar et al.~\cite{DBLP:journals/corr/abs-1802-07623}, which uses autoencoders to ensure that explanations remain on the data manifold and are thus realistic to human observers. While CEM focuses on identifying pertinent positives and negatives for simpler datasets like MNIST, our approach extends this principle by operating on more complex image data and introducing structured latent-space and masking strategies. The use of a VAE enables encoding images into a continuous latent space, where targeted feature manipulations can be decoded into visually coherent counterfactual instances. The rationale and alignment with CEM are discussed further in Section~\ref{Related work}.
+\section{Variational Autoencoder (VAE)} \label{sec:vae}
 
-\subsection{VAE Architecture}  \label{sec: vae_archeticture}
+To generate plausible and semantically meaningful counterfactual explanations, we employ a Variational Autoencoder (VAE) as the backbone of our approach. This design is inspired by the Contrastive Explanation Method (CEM) \cite{DBLP:journals/corr/abs-1802-07623}, which uses autoencoders to ensure explanations remain on the data manifold, thus appearing realistic to human observers. While CEM focuses on identifying pertinent positives and negatives for simpler datasets like MNIST, our approach extends this principle to the more complex image data of autonomous driving scenarios, incorporating structured latent space manipulations and masking strategies. The VAE encodes images into a continuous latent space, enabling targeted feature modifications that are then decoded into visually coherent counterfactual instances.  Further discussion on the rationale and alignment with CEM can be found in Section~\ref{sec:related_work}.
 
-The VAE employs a CNN-based encoder-decoder architecture.
-\subsubsection{Encoder: } The encoder consists of four convolutional layers that progressively downsample the input image (160x80 RGB) while increasing the channel depth (3->64->128->256->512). Each convolutional layer, except the third, is followed by Batch Normalization and a LeakyReLU activation function. The output of the final convolutional layer is flattened and passed through a fully connected layer with 1024 units and LeakyReLU activation. This layer then branches into two separate linear layers, outputting the mean ($μ$) and log-variance ($log σ²$) of the latent distribution, which parameterize a Gaussian distribution over the latent space.
+\subsection{VAE Architecture}  \label{sec:vae_architecture}
 
-\subsubsection{Decoder: } Mirroring the encoder, the decoder begins with two fully connected layers that expand the sampled latent vector. These are followed by four transposed convolutional layers that progressively upsample the representation back to the original image dimensions. LeakyReLU activations are used after each transposed convolutional layer except the last. A final Sigmoid activation function ensures the output pixel values are within the range [0, 1]. Figure [Insert Figure Number of VAE Architecture Diagram] provides a detailed visualization of the encoder and decoder architectures.
+% The VAE utilizes a CNN-based encoder-decoder architecture, detailed below and visualized in Figure~\ref{fig:vae_architecture}.
 
-\subsection{Variational Autoencoder (VAE) Training}
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[width=\textwidth]{vae_architecture.png} % Replace with your actual figure file
+%     \caption{Architecture of the Variational Autoencoder (VAE). The encoder (top) compresses the input image into a latent representation (µ, log σ²). The decoder (bottom) reconstructs the image from the sampled latent vector z.}
+%     \label{fig:vae_architecture}
+% \end{figure}
 
 
+\subsubsection{Encoder} \label{subsec:encoder}
+The encoder comprises four convolutional layers that progressively downsample the input image (160x80 RGB) while increasing the channel depth (3$\to$64$\to$128$\to$256$\to$512).  Each convolutional layer, except the third, is followed by Batch Normalization and a LeakyReLU activation function. The output of the final convolutional layer is flattened and passed through a fully connected layer with 1024 units and LeakyReLU activation. This layer then branches into two separate linear layers, producing the mean ($\mu$) and log-variance ($\log \sigma^2$) of the latent distribution, which parameterize a Gaussian distribution over the 128-dimensional latent space.
 
-\subsubsection{Loss Functions} \label{subsubsection: Loss Functions}
+
+\subsubsection{Decoder} \label{subsec:decoder}
+Mirroring the encoder, the decoder starts with two fully connected layers that expand the sampled latent vector. These are followed by four transposed convolutional layers that progressively upsample the representation back to the original image dimensions.  LeakyReLU activations follow each transposed convolutional layer except the last, which uses a Sigmoid activation function to ensure output pixel values are within the range [0, 1].
+
+
+\subsection{VAE Training and Loss Function} \label{sec:vae_training}
+
+The VAE was trained using the Adam optimizer with a learning rate of $1e-4$ and weight decay of $1e-5$. A learning rate scheduler, reducing the learning rate by a factor of 0.5 after 10 epochs of plateauing validation loss, was employed. The batch size was 128. Training proceeded for a maximum of 200 epochs, with early stopping (patience of 50 epochs) based on the validation loss. The KL divergence weight, balancing reconstruction accuracy and latent space regularization, was linearly annealed from an initial value of $5e-5$ by $0.0001$ per epoch, capped at 1.0.  The training process and resulting performance are further discussed in Section~\ref{sec:vae_performance}. % Cross-reference to results section
+
+Two reconstruction loss functions were investigated: Mean Squared Error (MSE) and Log-Cosh loss~\cite{chen2019log}. The Log-Cosh loss, defined as:
+
+$$L_{recon} = (1/a) \cdot \log(\cosh(a \cdot (x - \text{recon}_x)))$$
+
+where $a$ is a scaling parameter set to 1.0, offers improved robustness to outliers compared to MSE while preserving fine image details.  Our experiments, detailed in Section~\ref{sec:vae_performance}, demonstrated that the Log-Cosh loss resulted in [describe the key improvements, e.g., lower reconstruction loss, better visual quality], leading to its selection for the final VAE model. The reparameterization trick was employed during training to enable backpropagation through the stochastic sampling of the latent variables.
 
 \subsection{Evaluating VAE Performance}
 
