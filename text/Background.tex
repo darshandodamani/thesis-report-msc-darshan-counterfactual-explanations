@@ -185,7 +185,7 @@ The decoder reconstructs input data  from latent variables . It is designed prob
 \end{figure}
 
 
-\subsection{VAE Objective Function and Loss}
+\subsection{VAE Objective Function and Loss} \label{subsec:VAE Objective Function and Loss}
 The training objective of VAEs, derived from variational inference, maximizes the Evidence Lower Bound (ELBO):
 \begin{equation}
 \log p(x) \geq \mathbb{E}{q(z|x)}[\log p(x|z)] - D{KL}(q(z|x) \parallel p(z)).
@@ -193,7 +193,7 @@ The training objective of VAEs, derived from variational inference, maximizes th
 
 The first term is the reconstruction likelihood, encouraging accurate data reconstruction, while the second term ensures the approximate distribution  closely resembles the prior . Typically, a unit Gaussian  serves as the latent prior.
 
-\subsection{Reparameterization Trick}
+\subsection{Reparameterization Trick} \label{subsec:reparameterization_trick}
 Training VAEs involves optimizing stochastic processes that require backpropagation, making direct sampling problematic. The "reparameterization trick" addresses this by decoupling randomness from network parameters. Instead of sampling directly from , we sample from a unit Gaussian and transform this random variable by the latent distribution's mean and variance:
 \begin{equation}
 z = \mu(x) + \sigma(x) \odot \epsilon, \quad \text{where } \epsilon \sim \mathcal{N}(0, I).
