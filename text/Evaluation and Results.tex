@@ -1,3 +1,161 @@
+repeate th RQs
+\subsection{Evaluation of Variational Autoencoder (VAE)} \label{subsec:vae_evaluation}
+To assess the effectiveness of the trained Variational Autoencoder (VAE) in learning meaningful latent representations and high-quality image reconstructions, a combination of quantitative and qualitative evaluations was performed. Two reconstruction losses Mean Squared Error (MSE) and Log-Cosh were compared to determine their impact on training dynamics and final reconstruction quality. The evaluation spans across total loss, reconstruction fidelity, KL divergence behavior, perceptual quality (PSNR), pixel-level accuracy, and visual inspection of reconstructed samples.
+
+\subsubsection{Quantitative Evaluation}
+To assess the performance of the Variational Autoencoder (VAE), both the Log-Cosh and Mean Squared Error (MSE) loss functions were evaluated across several metrics, namely Total Loss, Reconstruction Loss, KL Divergence, Validation Pixel Accuracy, Peak Signal-to-Noise Ratio (PSNR). 
+
+The following table summarizes the average values over the final 5 epochs for both models:
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Metric} & \textbf{Log-Cosh (Final Avg)} & \textbf{MSE (Final Avg)} \\
+        \midrule
+        Validation Total Loss & 21.82 & 42.35 \\
+        Validation Recon Loss & 16.49 & 35.84 \\
+        Validation KL Divergence & 268.72 & 327.90 \\
+        Validation Pixel Accuracy & 0.971 & 0.969 \\
+        Validation PSNR (dB) & 31.39 & 30.99 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Average values over the final 5 epochs for Log-Cosh and MSE loss functions.}
+    \label{tab:vae_evaluation}
+\end{table}
+
+From these results:
+
+\begin{itemize}
+    \item The Log-Cosh loss achieves significantly lower total and reconstruction loss.
+    \item It also yields a higher PSNR, indicating better perceptual quality.
+    \item Pixel accuracy is slightly better with Log-Cosh as well.
+    \item Interestingly, the KL divergence is higher for MSE, indicating possible over-regularization.
+\end{itemize}
+
+
+
+
+
+
+\subsection{Neural Classifier on Latent Features (4-Class)}
+
+To evaluate the performance of the neural network classifier trained on VAE-extracted latent features, both quantitative metrics and qualitative visualizations were analyzed.
+
+The model was trained for 20 epochs in the 4-class dataset (\texttt{STOP}, \texttt{GO}, \texttt{RIGHT}, \texttt{LEFT}) using the training set of 13,308 samples and evaluated on a held-out test set of 3,284 samples. The training progression is shown in Figure~\ref{fig:loss_accuracy_plot}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{img/classifier/training_loss_accuracy_4_classes.png}
+    \caption{Training loss and accuracy curves for the neural classifier.}
+    \label{fig:loss_accuracy_plot}
+\end{figure}
+
+The training curves indicate a steady decrease in loss and improvement in accuracy, reaching a final training accuracy of approximately 89.4\%. This suggests the model learned meaningful patterns from the latent features without overfitting.
+
+\subsubsection*{Classification Report}
+
+Table~\ref{tab:classification_report} summarizes the classifier's performance on each class using precision, recall, and F1-score:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Support} \\
+\midrule
+STOP  & 0.91 & 0.99 & 0.95 & 821 \\
+GO    & 0.81 & 0.84 & 0.83 & 821 \\
+RIGHT & 0.93 & 0.86 & 0.89 & 821 \\
+LEFT  & 0.93 & 0.89 & 0.91 & 821 \\
+\midrule
+\textbf{Accuracy} & \multicolumn{4}{c}{0.89 (3284 samples)} \\
+\textbf{Macro avg} & 0.90 & 0.89 & 0.89 & -- \\
+\textbf{Weighted avg} & 0.90 & 0.89 & 0.89 & -- \\
+\bottomrule
+\end{tabular}
+\caption{Classification report for the neural classifier (4-class).}
+\label{tab:classification_report}
+\end{table}
+
+\subsubsection*{Confusion Matrix}
+
+The confusion matrix in Figure~\ref{fig:conf_matrix} provides further insight into class-wise misclassifications:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/classifier/confusion_matrix_4_classes.png}
+    \caption{Confusion matrix for the neural classifier on the 4-class test set.}
+    \label{fig:conf_matrix}
+\end{figure}
+
+\textbf{Observations:}
+\begin{itemize}
+    \item \textbf{STOP:} Most accurately classified class with a recall of 0.99.
+    \item \textbf{GO:} Relatively weaker precision and recall; misclassified as \texttt{RIGHT} or \texttt{LEFT} in 8\% of cases.
+    \item \textbf{RIGHT:} High precision, but some overlap with \texttt{GO} (85 misclassifications).
+    \item \textbf{LEFT:} Very strong performance overall, with some confusion with \texttt{GO}.
+\end{itemize}
+
+These results confirm that the classifier is highly capable of distinguishing most driving actions using VAE latent features, though the \texttt{GO} class remains the most ambiguous.
+
+
+
+
+\subsection{Comparison with Traditional Classifiers}
+
+To contextualize the performance of the neural network classifier, a suite of traditional machine learning models were trained and evaluated on the same latent feature representations extracted from the VAE. These models include Logistic Regression, K-Nearest Neighbors (KNN), Support Vector Machine (SVM), and Random Forest. Each model was trained on the 128-dimensional latent vectors and tested on the same 4-class dataset.
+
+Table~\ref{tab:classifier_comparison} presents a side-by-side comparison of accuracy and F1-scores across all classifiers:
+
+\begin{table}[h]
+\centering
+\small 
+\begin{tabular}{p{2.5cm}ccp{3.5cm}}
+\toprule
+\textbf{Classifier} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Notes} \\
+\midrule
+Logistic Regression & 80\% & 0.80 & Baseline linear classifier; struggled with \texttt{GO} \\[2pt]
+KNN & 88\% & 0.88 & High recall for \texttt{STOP}, sensitive to latent proximity \\[2pt]
+SVM & 89\% & 0.89 & Excellent class separability; especially for \texttt{LEFT} and \texttt{STOP} \\[2pt]
+Random Forest & 88\% & 0.88 & Robust performance; most errors in \texttt{GO} class \\[2pt]
+Neural Network & \textbf{89\%} & \textbf{0.89} & Best overall F1 balance; handles non-linear separations \\
+\bottomrule
+\end{tabular}
+\caption{Performance comparison of classifiers trained on VAE latent features (4-class).}
+\label{tab:classifier_comparison}
+\end{table}
+
+\textbf{Key Observations:}
+\begin{itemize}
+    \item The neural classifier and SVM achieved the highest overall accuracy and macro F1-score (both 0.89), indicating strong class separation in the latent space.
+    \item Logistic Regression performed the weakest, highlighting the limitation of linear decision boundaries in this latent representation.
+    \item KNN and Random Forest both achieved strong results, particularly for the \texttt{STOP} class, but showed more confusion on the \texttt{GO} class.
+    \item Across all models, the \texttt{GO} class consistently had the lowest precision and recall, suggesting overlapping representations in the latent space that merit further exploration.
+\end{itemize}
+
+These results confirm the value of the VAE latent space as a compact and expressive representation, allowing both deep and traditional classifiers to achieve competitive performance on complex multi-class driving data.
+
+
+
+\section{Evaluation of Masking Methods} \label{sec:evaluation}
+To address \textbf{RQ3} (see Section~\ref{sec:research_question}), we performed a comprehensive evaluation of all implemented masking techniques across multiple dimensions: counterfactual coverage, computational efficiency, method overlap, and robustness. A custom Python script was developed to automate the analysis by aggregating and comparing the results from each method's output CSV files.
+
+The script computes the total number of counterfactual explanations (CEs) found per method, their distribution across class labels, and the overall time taken. It also generates:
+
+\begin{itemize}
+    \item \textbf{Venn diagrams} illustrating overlaps in images where different methods found CEs,
+    \item \textbf{Bar charts} summarizing the count of successful explanations,
+    \item \textbf{Comparison tables} detailing which images were explained by which method,
+    \item \textbf{Overlap summaries} categorizing all images based on individual or shared method success,
+    \item \textbf{Sanity checks} verifying consistency and correctness in prediction changes,
+    \item \textbf{Validity checks} ensuring the reconstructed images are plausible (via SSIM, PSNR, etc.).
+\end{itemize}
+
+These results are saved as CSV and high-resolution plots and are discussed in detail in Section~\ref{sec:results_and_discussion}.
+
+
+
+
 \section{Overview of the Evaluation Strategy}
 Counterfactuals were evaluated using both AI-based metrics and human evaluation.
 
@@ -48,7 +206,7 @@ Percentage of participants preferring each method was analyzed.
 The relationship between human-selected best counterfactuals and AI-based evaluation scores (CSR, SSIM, PSNR) was analyzed.
 
 
-\
+
 
 \subsection{Quantitative Analysis}
 \label{subsec:quantitative_analysis}

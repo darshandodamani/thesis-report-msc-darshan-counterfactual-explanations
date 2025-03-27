@@ -30,7 +30,7 @@ b(x') = \text{"Speed Limit Sign"}.
 \end{equation}
 
 \subsection{Desirable Properties of Counterfactual Explanations}
-Counterfactual explanations are evaluated based on several key desirable properties, each ensuring usefulness, interpretability, and practicality:
+Counterfactual explanations are evaluated based on several key desirable properties~\cite{guidotti2022counterfactual}, each ensuring usefulness, interpretability, and practicality:
 
 \begin{enumerate}
     \item \textbf{Validity:}  
@@ -76,14 +76,14 @@ Besides individual counterfactual properties, it is equally important to assess 
 \end{enumerate}
 
 \subsection{Evaluation Metrics for Counterfactual Generation Algorithms}
-Most counterfactual generation algorithms are evaluated based on the desirable properties mentioned above. Although the ideal evaluation would involve a user study to assess real-world usability, research typically uses quantifiable metrics instead. Common quantitative evaluation metrics include:
+Most counterfactual generation algorithms are evaluated based on the desirable properties mentioned above. Although the ideal evaluation would involve a user study to assess real-world usability, research typically uses quantifiable metrics instead~\cite{Singh1622975, DBLP:journals/corr/abs-2010-10596, wang2024counterfactualexplanationsdeeplearningbased}. Common quantitative evaluation metrics include:
 
 \begin{itemize}
-    \item \textbf{Validity}: Percentage of generated counterfactuals successfully changing the class label.
+    \item \textbf{Validity}: Validity measures the ratio of counterfactuals that actually achieve the desired class label to the total number of counterfactuals generated. This metric is fundamental as it assesses whether the counterfactual successfully flips the prediction to the target class. Without validity, a counterfactual explanation fails its primary purpose of showing how an alternative outcome could be achieved.
     \item \textbf{Proximity:} Average distance between original and counterfactual instances, typically measured using L1, L2 norms, or similar metrics.
-    \item \textbf{Plausibility:} Assessment of realism within the data distribution (e.g., reconstruction error using VAEs or distance to nearest neighbors).
-    \item \textbf{Actionability:} Proportion of counterfactuals involving actionable changes.
-    \item \textbf{Diversity:} Degree of variation across multiple counterfactual instances.
+    \item \textbf{Plausibility:} Assessment of realism within the data distribution (e.g., reconstruction error using VAEs or distance to nearest neighbors) Typically measured using distance metrics like L1 (Manhattan) or L2 (Euclidean) norms.
+    \item \textbf{Actionability:} Actionability evaluates the proportion of counterfactuals involving feasible changes that users can actually implement. his metric recognizes that not all features can be modified in practice
+    \item \textbf{SSIM:} For image-based counterfactual explanations, SSIM provides a perceptually aligned method for measuring similarity between original and counterfactual images. Unlike simple pixel-wise comparisons, SSIM identifies structural information and measures the differences between this information extracted from the two images. 
 \end{itemize}
 
 These metrics provide a systematic and practical way to assess the quality of generated counterfactual explanations.
@@ -263,7 +263,7 @@ A common approach is \textbf{feature attribution}, which identifies the contribu
 
 \subsection{LIME: Local Interpretable Model-Agnostic Explanations}
 
-LIME (Local Interpretable Model-Agnostic Explanations) is a widely used post-hoc explainability method introduced by Ribeiro et al. \cite{ribeiro2016ML}. It provides local explanations for individual predictions made by complex models. The key advantage of LIME is that it is model-agnostic, meaning it can be applied to any machine learning model. In the paper \cite{ribeiro2016ML} in which the authors propose a concrete implementation of local surrogate models. Surrogate models are trained to approximate the predictions of the underlying black box model. Instead of training a global surrogate model, LIME focuses on training local surrogate models to explain individual predictions.
+LIME (Local Interpretable Model-Agnostic Explanations) is a widely used post-hoc explainability method introduced by Ribeiro et al. \cite{Ribeiro2018}. It provides local explanations for individual predictions made by complex models. The key advantage of LIME is that it is model-agnostic, meaning it can be applied to any machine learning model. In the paper \cite{ribeiro2016ML} in which the authors propose a concrete implementation of local surrogate models. Surrogate models are trained to approximate the predictions of the underlying black box model. Instead of training a global surrogate model, LIME focuses on training local surrogate models to explain individual predictions.
 
 LIME is motivated by the need to provide interpretable explanations for specific instances rather than understanding the entire model behavior globally. For instance, consider a healthcare dataset containing patient information such as BMI, weight, age, and blood group. Suppose a model predicts whether a patient is healthy or unhealthy. 
 
