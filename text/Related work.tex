@@ -32,6 +32,9 @@ Parallel to advances in generative modeling, the development of Local Interpreta
 
 Together, VAEs and LIME form the technical backbone of our framework: the VAE provides a generative latent space for semantically meaningful edits, while LIME identifies high-impact features to prioritize during counterfactual generation. This combination supports the creation of interpretable, realistic, and class-altering explanations for complex image classification tasks.
 
+Agarwal and Nguyen~\cite{agarwal2020explainingimageclassifiersremoving} proposed a generative approach to improve the realism of perturbation based explainability methods. They combined standard attribution techniques such as LIME, Saliency, and Meaningful Perturbations with pretrained inpainting networks (e.g., DeepFill v1/v2) to realistically fill masked regions in input images. Their work demonstrated that traditional masking methods often lead to unnatural perturbations, potentially misleading explanation results, and that generative models can restore semantic consistency in masked inputs. They evaluated their approach using object localization, deletion scores, and saliency metrics on benchmark datasets such as ImageNet and Places365. Inspired by their motivation to ensure realistic masked inputs, we employ a domain-specific Variational Autoencoder (VAE) to reconstruct and re-encode masked images within our counterfactual generation pipeline elaborated in \cref{sec:lime_on_images}.
+
+
 
 
 
