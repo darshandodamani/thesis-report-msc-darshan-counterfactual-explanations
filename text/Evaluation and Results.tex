@@ -1,39 +1,251 @@
-repeate th RQs
+As introduced in \cref{Introduction}, this thesis explores the generation of counterfactual explanations (CEs) in image-based autonomous driving scenarios using deep generative models and post-hoc interpretability techniques. The corresponding implementations are detailed in \cref{Methodology}.
+
+This chapter presents the evaluation strategy and experimental findings, structured according to the central research questions (RQs). For each RQ, the evaluation criteria are outlined and later expanded in dedicated result sections.
+
+\textbf{RQ1:} \textit{How can deep generative models be implemented to effectively encode and reconstruct images of high-dimensional driving scenes for interpretable and compact representation learning in autonomous driving systems?}
+
+    \subsubsection*{Evaluation} 
+    The VAE is evaluated on two primary fronts: (i) the fidelity of reconstructed images, and (ii) the semantic usefulness of the latent representations for downstream classification. To this end, multiple classifiers—including MLP, SVM, KNN, Logistic Regression, and Random Forest—are trained on the latent vectors extracted by the encoder. Classification performance is assessed for both binary (GO vs. STOP) and multi-class (GO, STOP, LEFT, RIGHT) tasks. Evaluation metrics include reconstruction loss, pixel accuracy, PSNR, classification accuracy, precision, recall, and F1-score.
+    
+\textbf{RQ2:} \textit{How can loss function modifications in Variational Autoencoders (VAEs) optimize image reconstruction quality in autonomous driving tasks?} 
+
+    \subsubsection*{Evaluation} 
+    Compare the image quality Structural Similarity Index (SSIM) and Peak Signal-to-Noise Ratio (PSNR) and classification metrics (accuracy, F1) between a standard VAE and one using modified loss functions. This will include both quantitative analysis and qualitative visualizations of reconstructed images.
+    
+\textbf{RQ3:} \textit{How do different masking techniques impact the effectiveness and efficiency of counterfactual explanation generation, in terms of coverage, computational cost, method overlap, and failure rate? (See \cref{Methodology} for details on the techniques investigated.)}
+
+    \subsubsection*{Evaluation}
+    To assess each method, the following criteria are measured during CE generation:
+    \begin{itemize}
+        \item \textbf{Coverage:} Proportion of total inputs for which valid counterfactual explanations are successfully generated.
+        \item \textbf{Computational Cost:} Average time taken per sample for each method.
+        \item \textbf{Failure Rate:} Percentage of inputs for which no counterfactual explanations was found.
+        \item \textbf{Method Overlap:} Instances where multiple masking techniques generate the same counterfactual explanations.
+        \item \textbf{Visual Quality:} SSIM, PSNR, UQI, and VIFP metrics between original and reconstructed images.
+    \end{itemize}
+
+    All masking methods are applied to the same dataset split, using identical model checkpoints for the VAE and classifier. This ensures fair and consistent comparisons across metrics.
+    
+\textbf{RQ4:} \textit{ Which counterfactual explanation method is preferred by users when selecting among generated explanations of the same original image? What factors (interpretability, plausibility, and visual coherence) influence user preference? (See \cref{Methodology} for details on the methods compared.)}
+
+    \subsubsection*{Evaluation}
+    Evaluation is based on aggregated user responses:
+    
+    \begin{itemize}
+        \item \textbf{Preference Distribution:} Percentage of total selections made per CE method.
+        \item \textbf{Attribute Ratings:} Average scores for interpretability, plausibility, and coherence across methods.
+        \item \textbf{Qualitative Feedback:} Comments collected through optional text fields to gain insights into user reasoning.
+        \item \textbf{Inter-method Comparison:} Correlation between user ratings and quantitative CE quality metrics (e.g. SSIM, PSNR).
+    \end{itemize}
+
+    This dual analysis enables the identification of methods that are not only algorithmically effective but also intuitively meaningful to end users critical for real-world deployment of interpretable AI in autonomous systems.
+    
+
+
+Each of the following sections restates the respective RQ, evaluates the implemented methods against that question, and presents results along with a discussion of key findings.
 
 
 \subsection{Evaluation of Variational Autoencoder (VAE)} \label{subsec:vae_evaluation}
-To assess the effectiveness of the trained Variational Autoencoder (VAE) in learning meaningful latent representations and high-quality image reconstructions, a combination of quantitative and qualitative evaluations was performed. Two reconstruction losses Mean Squared Error (MSE) and Log-Cosh were compared to determine their impact on training dynamics and final reconstruction quality. The evaluation spans across total loss, reconstruction fidelity, KL divergence behavior, perceptual quality (PSNR), pixel-level accuracy, and visual inspection of reconstructed samples.
 
-\subsubsection{Quantitative Evaluation}
+The Variational Autoencoder (VAE) forms the backbone of this thesis. It serves dual purposes: (i) as a deep generative model that enables the reconstruction and manipulation of high-dimensional driving scene images, and (ii) as a representation learning tool to generate low-dimensional, semantically meaningful latent vectors suitable for downstream driving action classification. The quality of both image reconstruction and latent encoding is crucial for the success of counterfactual generation. Therefore, evaluating the VAE both quantitatively and qualitatively is a vital first step.
+
+To ensure robustness, various architectural configurations and hyperparameter settings were explored, including latent dimensionality, convolutional depth, and KL divergence annealing schedules. One major focus was the choice of reconstruction loss function, which has a significant effect on the quality of output and the stability of training. Two variants were trained. One using traditional Mean Squared Error (MSE) and the other using Log-Cosh, a smoother, outlier-robust alternative motivated by prior work by Chen et al.,~\cite{chen2019log}. This section presents the training dynamics, comparative results between the two losses, and the final analysis of latent space quality.
+
+\subsubsection{Training Performance and Loss Analysis} \label{subsubsec:vae_training_loss}
+
+Two VAE variants were trained for 200 epochs each, differing only in their reconstruction loss: Mean Squared Error (MSE) and Log-Cosh. Throughout training, we monitored several key metrics:
+
+\begin{itemize}
+    \item \textbf{Total Loss:} Sum of reconstruction and KL divergence losses.
+    \item \textbf{Reconstruction Loss:} Measures pixel-wise reconstruction error.
+    \item \textbf{KL Divergence:} Reflects the alignment of the latent space distribution with a unit Gaussian prior.
+    \item \textbf{Validation Pixel Accuracy:} Measures how accurately the reconstructed image matches the original at pixel level.
+    \item \textbf{PSNR (Peak Signal-to-Noise Ratio):} Evaluates perceptual reconstruction quality.
+\end{itemize}
+
+\textbf{Log-Cosh Variant (Figures \ref{fig:logcosh_kl_loss} to \ref{fig:logcosh_psnr})}
+
+\begin{itemize}
+    \item \textbf{KL Divergence:} As shown in Figure~\ref{fig:logcosh_kl_loss}, KL loss rapidly decreased in the early epochs and gradually stabilized, indicating that the annealing schedule successfully encouraged disentangled latent features.
+    \item \textbf{Reconstruction \& Total Loss:} Both training and validation losses (Figures~\ref{fig:logcosh_recon_loss} and \ref{fig:logcosh_total_loss}) show a smooth, monotonic decrease, suggesting stable convergence.
+    \item \textbf{Pixel Accuracy \& PSNR:} Validation pixel accuracy steadily increased, reaching 0.97 (Figure~\ref{fig:logcosh_val_acc}), while PSNR improved consistently to 31.4 dB (Figure~\ref{fig:logcosh_psnr}).
+\end{itemize}
+
+A qualitative comparison of the reconstructed image at epoch 200 (Figure~\ref{fig:logcosh_epoch200}) shows that the VAE preserves semantic structure and texture remarkably well.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_kl_loss.png}
+        \caption{KL divergence over epochs for VAE trained with Log-Cosh loss.}
+        \label{fig:logcosh_kl_loss}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_recon_loss.png}
+        \caption{Reconstruction loss over epochs (Log-Cosh).}
+        \label{fig:logcosh_recon_loss}
+    \end{subfigure}
+    
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_total_loss.png}
+        \caption{Total loss over epochs (Log-Cosh).}
+        \label{fig:logcosh_total_loss}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_val_accuracy.png}
+        \caption{Validation pixel accuracy across epochs (Log-Cosh).}
+        \label{fig:logcosh_val_acc}
+    \end{subfigure}
+    
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_val_psnr.png}
+        \caption{Validation PSNR trajectory for Log-Cosh model.}
+        \label{fig:logcosh_psnr}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/reconstructions/epoch_200.png}
+        \caption{Original vs. Reconstructed image at epoch 200 (Log-Cosh).}
+        \label{fig:logcosh_epoch200}
+    \end{subfigure}
+    
+    \caption{Training Performance and Loss Analysis for Log-Cosh Variant: Detailed analysis of the VAE's performance using the Log-Cosh loss function, highlighting key metrics and qualitative results.}
+    \label{fig:logcosh_analysis}
+\end{figure}
+
+
+
+
+\subsubsection{Training Comparison with MSE Loss} \label{subsubsec:vae_mse_loss}
+
+The training curves for the MSE-based VAE show similar convergence trends but at a consistently higher loss level across all metrics:
+
+\begin{itemize}
+    \item \textbf{Total and Reconstruction Loss:} Figures~\ref{fig:mse_total_loss} and \ref{fig:mse_recon_loss} indicate slower and less stable convergence compared to Log-Cosh.
+    \item \textbf{Pixel Accuracy \& PSNR:} Slightly lower final accuracy (~0.969) and PSNR (30.99 dB), as seen in Figures~\ref{fig:mse_val_acc} and \ref{fig:mse_val_psnr}.
+\end{itemize}
+
+Qualitative Comparison: Figure~\ref{fig:mse_epoch200} shows noticeable blur and loss of fine structure in the reconstructions compared to Log-Cosh.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_kl_loss.png}
+        \caption{KL divergence over epochs for VAE trained with MSE loss.}
+        \label{fig:mse_kl_loss}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_recon_loss.png}
+        \caption{Reconstruction loss over epochs (MSE).}
+        \label{fig:mse_recon_loss}
+    \end{subfigure}
+    
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_total_loss.png}
+        \caption{Total loss over epochs (MSE).}
+        \label{fig:mse_total_loss}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_val_accuracy.png}
+        \caption{Validation pixel accuracy across epochs (MSE).}
+        \label{fig:mse_val_acc}
+    \end{subfigure}
+    
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_val_psnr.png}
+        \caption{Validation PSNR trajectory for MSE model.}
+        \label{fig:mse_val_psnr}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/reconstructions/epoch_200.png}
+        \caption{Original vs. Reconstructed image at epoch 200 (MSE).}
+        \label{fig:mse_epoch200}
+    \end{subfigure}
+    
+    \caption{Training Performance and Loss Analysis for MSE Variant: A comparison of the VAE's performance using MSE loss, highlighting differences in convergence and reconstruction quality compared to Log-Cosh.}
+    \label{fig:mse_analysis}
+\end{figure}
+
+
+
+
+
+
+
+
+
+
+\subsubsection{Quantitative Comparison of Loss Functions} \label{subsubsec:vae_quant_comparison}
 To assess the performance of the Variational Autoencoder (VAE), both the Log-Cosh and Mean Squared Error (MSE) loss functions were evaluated across several metrics, namely Total Loss, Reconstruction Loss, KL Divergence, Validation Pixel Accuracy, Peak Signal-to-Noise Ratio (PSNR). 
 
-The following table summarizes the average values over the final 5 epochs for both models:
+Table~\ref{tab:loss_comparison} presents average values over the final 5 epochs for both variants:
 
-\begin{table}[h]
+\begin{table}[htbp]
     \centering
     \begin{tabular}{lcc}
         \toprule
-        \textbf{Metric} & \textbf{Log-Cosh (Final Avg)} & \textbf{MSE (Final Avg)} \\
+        \textbf{Metric} & \textbf{Log-Cosh (Avg)} & \textbf{MSE (Avg)} \\
         \midrule
         Validation Total Loss & 21.82 & 42.35 \\
-        Validation Recon Loss & 16.49 & 35.84 \\
+        Validation Reconstruction Loss & 16.49 & 35.84 \\
         Validation KL Divergence & 268.72 & 327.90 \\
         Validation Pixel Accuracy & 0.971 & 0.969 \\
         Validation PSNR (dB) & 31.39 & 30.99 \\
         \bottomrule
     \end{tabular}
-    \caption{Average values over the final 5 epochs for Log-Cosh and MSE loss functions.}
-    \label{tab:vae_evaluation}
+    \caption{Comparison of validation metrics for VAE variants (Final 5 Epoch Average)}
+    \label{tab:loss_comparison}
 \end{table}
+
+Additionally, Figures~\ref{fig:val_loss_comparison} and \ref{fig:val_psnr_comparison} provide a side-by-side comparison of Validation Loss and PSNR over all epochs.
+
+
+
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/val_loss_comparison.png}
+        \caption{Validation Loss Comparison: Log-Cosh vs. MSE over all epochs.}
+        \label{fig:val_loss_comparison}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/val_psnr_comparison.png}
+        \caption{Validation PSNR Comparison: Log-Cosh vs. MSE over all epochs.}
+        \label{fig:val_psnr_comparison}
+    \end{subfigure}
+    
+    \caption{Quantitative Comparison of Loss Functions: Validation Loss and PSNR for Log-Cosh and MSE variants.}
+    \label{fig:quant_comparison}
+\end{figure}
+
 
 From these results:
 
 \begin{itemize}
-    \item The Log-Cosh loss achieves significantly lower total and reconstruction loss.
-    \item It also yields a higher PSNR, indicating better perceptual quality.
-    \item Pixel accuracy is slightly better with Log-Cosh as well.
-    \item Interestingly, the KL divergence is higher for MSE, indicating possible over-regularization.
+    \item The Log-Cosh loss outperformed MSE in terms of both total and reconstruction loss, indicating smoother training and better pixel-wise fidelity.
+    \item A higher PSNR suggests improved perceptual quality in reconstructions when using Log-Cosh.
+    \item KL Divergence was slightly lower for Log-Cosh, indicating a better balance between compression and regularization.
+    \item These results affirm the hypothesis that the Log-Cosh loss leads to more visually realistic reconstructions, thus answering RQ2.
 \end{itemize}
+
+
+
+\subsubsection{Visual Comparison of Reconstructions} \label{subsubsec:vae_visual_recon}
+Representative input images and corresponding reconstructions from both models at epoch 200 were visually compared.
+
+Log-Cosh Reconstructions (Figure~\ref{fig:logcosh_epoch200}) retain road boundaries, tree textures, and lighting gradients with greater smoothness and fewer artifacts.
+
+MSE Reconstructions (Figure~\ref{fig:mse_epoch200}) exhibit noise in edge regions and less coherent texture patterns and lost many important details like traffic light pole, road boundary and many more.
+
+These qualitative results further confirms that adopting the Log-Cosh loss, as motivated by Chen et al.~\cite{chen2019log}, substantially improves VAE performance thereby answering RQ2 (How can loss function modifications in Variational Autoencoders (VAEs) optimize image reconstruction quality in autonomous driving tasks?).
+
 
 
 
@@ -42,7 +254,7 @@ From these results:
 
 \subsection{Neural Classifier on Latent Features (4-Class)}
 
-To evaluate the performance of the neural network classifier trained on VAE-extracted latent features, both quantitative metrics and qualitative visualizations were analyzed.
+To evaluate the performance of the neural network classifier trained on VAE extracted latent features, both quantitative metrics and qualitative visualizations were analyzed.
 
 The model was trained for 20 epochs in the 4-class dataset (\texttt{STOP}, \texttt{GO}, \texttt{RIGHT}, \texttt{LEFT}) using the training set of 13,308 samples and evaluated on a held-out test set of 3,284 samples. The training progression is shown in Figure~\ref{fig:loss_accuracy_plot}.
 
@@ -136,6 +348,17 @@ Neural Network & \textbf{89\%} & \textbf{0.89} & Best overall F1 balance; handle
 \end{itemize}
 
 These results confirm the value of the VAE latent space as a compact and expressive representation, allowing both deep and traditional classifiers to achieve competitive performance on complex multi-class driving data.
+r. 
+
+
+
+
+
+
+
+
+
+
 
 
 
