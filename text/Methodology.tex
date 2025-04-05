@@ -1,69 +1,66 @@
-This chapter details the methodological framework designed to investigate and generate counterfactual explanations (CEs) in the context of image-based autonomous driving decisions. The central goal is to explore how deep generative models, specifically Variational Autoencoders (VAEs), combined with various masking techniques and post-hoc interpretability tools, can enhance the transparency and explainability of learned decision boundaries in neural classifiers.
+This chapter details the methodological framework designed to investigate and generate counterfactual explanations (CEs) in the context of image based autonomous driving decisions. At the core of this framework is a deep generative model, specifically a variational autoencoder (VAE) trained to encode and reconstruct high-dimensional driving scenes collected from the CARLA simulator. The learned latent space representations are used to train a classifier that predicts discrete driving actions STOP, GO, RIGHT, and LEFT.
+
+To induce counterfactual changes, a range of masking techniques are applied either to the input images or directly within the latent space. These perturbations aim to identify minimal yet semantically meaningful modifications that result in altered classifier predictions. The effectiveness of each method is assessed through both algorithmic metrics (e.g., reconstruction loss, PSNR, and SSIM) and a human evaluation study that captures interpretability, plausibility, and visual coherence from a user’s perspective.
+
+The design and implementation of this framework are structured around four central research questions (RQs), initially introduced in Chapter~\ref{Introduction} and now revisited with a focus on their technical realization. Each RQ targets a distinct component of the system from representation learning and loss function optimization to comparative evaluation of explanation strategies. The implementation strategies are detailed in the sections that follow, with relevant modules cross-referenced (e.g., \cref{sec:vae}, \cref{sec:classifier_architectures}, and \cref{sec:feature_masking_pipeline}) to guide the reader through the complete example-based explainability pipeline.
 
 
-A high-level overview of the proposed methodology is illustrated in Figure (to be added). The dataset is collected from the CARLA simulator, preprocessed, and used to train a VAE for learning latent space representations of driving scenes. A classifier is then trained to predict driving decisions—namely \texttt{STOP}, \texttt{GO}, \texttt{LEFT}, and \texttt{RIGHT}—based on the learned representations. To generate counterfactual explanations, various feature masking strategies are applied to the input image or latent vector to induce minimal, yet semantically meaningful changes that result in altered predictions. These counterfactuals are finally evaluated using quantitative AI-based metrics and qualitative human interpretability studies.
 
-\section*{Research Question 1 (RQ1): VAE Implementation}
-
-\textbf{RQ1:} \textit{How can deep generative models be implemented to effectively encode and reconstruct images of high-dimensional driving scenes for interpretable and compact representation learning in autonomous driving systems?}
+\textbf{RQ1: VAE and Classifier Implementation} \\
+\textit{How can deep generative models be implemented to effectively encode and reconstruct images of high-dimensional driving scenes for interpretable and compact representation learning in autonomous driving systems?}
 
 To address this research question, the following implementation strategy was adopted.
 
-\subsubsection*{Implementation}
-    A Variational Autoencoder (VAE) is implemented to learn compact and interpretable representations from RGB images of simulated driving environments. The architecture comprises a deep convolutional encoder-decoder framework, optimized using reconstruction and regularization objectives. Key design considerations include latent space dimensionality selection, KL divergence annealing for stable training, and comparison of reconstruction losses (Mean Squared Error vs. Log-Cosh). The model is trained on both binary and multiclass labeled datasets to ensure generalization. The detailed implementation is carried out in the \cref{sec:vae}
+\paragraph{Implementation:} A Variational Autoencoder (VAE) is implemented to learn compact and interpretable representations from RGB images of simulated driving environments. The architecture comprises a deep convolutional encoder-decoder framework, optimized using reconstruction and regularization objectives. Key design considerations include latent space dimensionality selection, KL divergence annealing for stable training, and comparison of reconstruction losses (Mean Squared Error vs. Log-Cosh). The model is trained on both binary and multi-class labeled datasets to ensure generalization. The detailed implementation is carried out in the \cref{sec:vae}.
 
-
-
-The architectural and training details of the VAE are elaborated in Section~\ref{sec:vae}, while classifier models trained on the latent space are described in Section~\ref{sec:classifier_mdel_for_prediction}. Evaluation results and visual analyses are discussed in Chapter~\ref{Evaluation and Results}.
+The architectural and training details of the VAE are elaborated in \cref{sec:vae}, while classifier models trained on the latent space are described in \cref{sec:classifier_architectures}. Evaluation results and visual analyses are discussed in \cref{sec:vae_evaluation} and \cref{sec:classifier_eval}.
 
 \vspace{1em}
-\section*{Research Question 2 (RQ2): Loss Function Analysis}
 
-\textbf{RQ2:} \textit{How can loss function modifications in Variational Autoencoders (VAEs) optimize image reconstruction quality in autonomous driving tasks?}
+\textbf{RQ2: Loss Function Analysis} \\
+\textit{How can loss function modifications in Variational Autoencoders (VAEs) optimize image reconstruction quality in autonomous driving tasks?}
 
-\subsubsection*{Implementation} 
-    To address RQ2, the VAE introduced in Section~\ref{sec:vae} is trained using two different reconstruction loss functions: Mean Squared Error (MSE) and Log-Cosh. The Log-Cosh loss is selected based on prior work~\cite{chen2019log}, which shows that it balances sensitivity to small deviations (like L2) with robustness to outliers (like L1), making it suitable for visual data.
+\vspace{-1em}
+
+\paragraph{Implementation:} To address RQ2, the VAE introduced in \cref{sec:vae} is trained using two different reconstruction loss functions, Mean Squared Error (MSE) and Log-Cosh. The Log-Cosh loss is selected based on prior work~\cite{chen2019log}, which shows that it balances sensitivity to small deviations (like L2) with robustness to outliers (like L1), making it suitable for visual data.
         
-    Both losses are integrated into an otherwise identical training setup: KL divergence annealing is consistently applied, and hyperparameters (learning rate, batch size, optimizer) are held constant to ensure fair comparison. The models are trained independently with the same dataset and initialization seed to ensure reproducibility.
+Both losses are integrated into an otherwise identical training setup. KL divergence annealing is consistently applied, and hyperparameters (learning rate, batch size, optimizer) are held constant to ensure fair comparison. The models are trained independently with the same dataset. The implementation of these are explained in the \cref{subsec:vae_loss}, corresponding evaluations and results are discussed in the \cref{subsec:vae_quant_comparison}.
 
 
 \vspace{1em}
-\section*{Research Question 3 (RQ3): Comparative Evaluation of Masking Techniques}
 
-\textbf{RQ3:} \textit{How do different masking techniques impact the effectiveness and efficiency of counterfactual explanation generation, in terms of coverage, computational cost, method overlap, and failure rate?}
+\textbf{RQ3: Comparative Evaluation of Masking Techniques} \\
+\textit{How do different masking techniques impact the effectiveness and efficiency of counterfactual explanation generation, in terms of coverage, computational cost, method overlap, and failure rate?}
 
-\subsubsection*{Implementation}
-    To explore RQ3, multiple masking strategies are implemented to generate counterfactual explanations (CEs) based on altering either the input image space or the latent space of a trained VAE. Each method is integrated into a unified CE pipeline that encodes the image, applies a specific masking technique, reconstructs the image using the VAE, and reclassifies it to determine whether a prediction change has occurred. Thus qualifying as a counterfactual.
+\vspace{-1em}
+
+\paragraph{Implementation:}To explore RQ3, multiple masking strategies are implemented to generate counterfactual explanations (CEs) based on altering either the input image space or the latent space of a trained VAE. Each method is integrated into a unified Counterfactual explanation pipeline that encodes the image, applies a specific masking technique, reconstructs the image using the VAE, and reclassifies it to determine whether a prediction change has occurred. Thus qualifying as a counterfactual explanations.
 
 
-
-
-The full methodology for each masking technique is detailed in Section~\ref{sec:feature_masking_pipeline}, and experimental results for these techniques are presented in Chapter~\ref{Evaluation and Results}.
+The full methodology for each masking technique is detailed in \cref{sec:feature_masking_pipeline}, and experimental results for these techniques are presented in \cref{sec:masking_eval}.
 
 \vspace{1em}
-\section*{Research Question 4 (RQ4): User Study on Counterfactual Preferences}
-\textbf{RQ4:} \textit{Which counterfactual explanation method is most preferred by users when selecting among generated explanations of the same original image? What factors (interpretability, plausibility, and visual coherence) influence user preference?}
 
-    \subsubsection*{Implementation:}
-    To answer RQ4, a user study is conducted where participants are shown original driving scene images alongside counterfactuals generated using different methods (from RQ3). For each image, participants are asked to select the explanation they find most helpful or intuitive and rate it based on three key dimensions:
+\textbf{RQ4: User Study on Counterfactual Preferences}  \\
+\textit{Which counterfactual explanation method is most preferred by users when selecting among generated explanations of the same original image? What factors influence user preference?}
 
-    \begin{itemize}
-        \item \textbf{Interpretability:} How easily can the user understand why the prediction changed?
-        \item \textbf{Plausibility:} Does the counterfactual look like a realistic driving scene?
-        \item \textbf{Visual Coherence:} Is the reconstruction smooth, artifact-free, and consistent with the original image?
-    \end{itemize}
+\vspace{-1em}
 
-    The user interface randomizes CE presentation order and ensures that explanations for the same image are always compared side-by-side to minimize bias. Demographic data and basic familiarity with AI or autonomous driving are also collected for analysis.
+\paragraph{Implementation:}To answer RQ4, a user study is conducted in which participants are shown original driving scene images alongside counterfactual explanations generated using different masking methods (from RQ3). For each image, participants are asked to select the explanation they find most helpful or intuitive and rate it based on three key dimensions:
 
-    
-    
-    Details of the user study design and AI evaluation pipeline are presented in Section~\ref{sec:user_study}, and comparative results are discussed in Chapter~\ref{Evaluation and Results}.
+\begin{itemize}
+    \item \textbf{Interpretability:} How easily can the user understand why the prediction changed?
+    \item \textbf{Plausibility:} Does the counterfactual look like a realistic driving scene?
+    \item \textbf{Visual Coherence:} Is the reconstruction smooth, artifact-free, and consistent with the original image?
+\end{itemize}
+
+Details of the user study design and AI evaluation pipeline are presented in the \cref{app:web_interface}, and comparative results are discussed in \cref{sec:human_evluation}.
 
 \section{Experimental Setup}
 
 All experiments in this thesis were conducted in a Linux environment to ensure compatibility with the CARLA simulator and associated tools. The setup was built using \textbf{CARLA version 0.9.15}, an open-source urban driving simulator widely adopted for autonomous driving research. This version provides a flexible and high-fidelity simulation environment, making it suitable for collecting diverse, labeled driving data under various rural and urban conditions.
 
-To maintain compatibility with CARLA’s Python API, \textbf{Python version 3.7} was used for dataset collection. This version is recommended by CARLA’s developers to avoid API and dependency conflicts. The dataset was collected using two CARLA maps \textbf{Town03} and \textbf{Town07}~\cite{CARLA2024}, provide varied driving topologies as shown in Figure~\ref{fig:carla_maps}. These maps were chosen due to their varied road layouts and environmental features, which provide rich scenarios for evaluating counterfactual explanations. Example simulation scenes demonstrating diverse driving and weather conditions are presented in Figure~\ref{fig:carla_scenes}. Users replicating this setup should download the CARLA server (v0.9.15) along with the additional maps from the \textit{official CARLA repository}. Once downloaded, the maps must be copied into the main CARLA directory to ensure proper integration.
+To maintain compatibility with CARLA’s Python API, \textbf{Python version 3.7} was used for dataset collection. This version is recommended by CARLA’s developers to avoid API and dependency conflicts. The dataset was collected using two CARLA maps \textbf{Town03} and \textbf{Town07}~\cite{CARLA2024}, provide varied driving topologies as shown in Figure~\ref{fig:carla_maps}. These maps were chosen due to their varied road layouts and environmental features, which provide rich scenarios for evaluating counterfactual explanations. Example simulation scenes demonstrating diverse driving and weather conditions are presented in Figure~\ref{fig:carla_scenes}. Users replicating this setup should download the CARLA server (v0.9.15) along with the additional maps from the \textit{official CARLA repository}~\cite{CARLA2024docs}. Once downloaded, the maps must be copied into the main CARLA directory to ensure proper integration.
 
 \begin{figure}[htbp]
     \centering
@@ -82,7 +79,7 @@ To maintain compatibility with CARLA’s Python API, \textbf{Python version 3.7}
     \label{fig:carla_maps}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=0.7\linewidth]{img/carla/CARLA_Environment.png}
     \caption{3D Sample scenes from CARLA showcasing diverse conditions during dataset collection. The images illustrate a variety of urban and rural settings, with diverse lighting and weather conditions, including sunny, foggy, rainy, and snowy scenarios. Each scene highlights the flexibility of CARLA in simulating realistic driving environments for autonomous vehicle testing.}
@@ -140,14 +137,14 @@ For the binary classification scheme, the training set contained 4,959 GO and 4,
     \begin{subfigure}{0.48\textwidth}
         \centering
         \includegraphics[width=\linewidth]{img/dataset/2class_distribution.png}
-        \caption{Binary (GO/STOP) label distribution\vphantom{g}}
+        \caption{Binary class (GO, STOP) label distribution}
         \label{fig:binary_class_distribution}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.5\textwidth}
         \centering
         \includegraphics[width=\linewidth]{img/dataset/4class_distribution.png}
-        \caption{4-class label distribution (GO, STOP, LEFT, RIGHT)}
+        \caption{multi-class label distribution (GO, STOP, LEFT, RIGHT)}
         \label{fig:class_distribution_pie}
     \end{subfigure}
     \caption{Label distributions across training and testing datasets for binary and multi-class classification schemes.}
@@ -211,92 +208,95 @@ The reshaped feature map is then passed through:
 
 The final output has shape $3 \times 80 \times 160$, matching the input dimensions. The Sigmoid activation ensures output values lie in the normalized $[0,1]$ range.
 
-\subsubsection{Training Objective and Optimization Strategy} \label{subsubsec:vae_loss}
 
-The training objective for the VAE is the variational loss function:
+\subsection{Image Preprocessing and Augmentation Strategy} \label{subsec:vae_preprocessing}
+
+To improve the generalization ability of the VAE and ensure robustness during training, a set of preprocessing and data augmentation techniques were applied. These techniques were chosen to address common challenges in real-world visual data such as occlusion, viewpoint variation, and overfitting.
+
+
+During training, the following transformations were applied:
+\begin{itemize}
+    \item \textbf{Image Resizing:} All images were resized to a fixed resolution of $80 \times 160$ pixels to match the input dimensions required by the encoder.
+    \item \textbf{Random Horizontal Flip:} Each image was horizontally flipped with a 50\% probability to simulate mirrored driving conditions and improve generalization.
+    % \item \textbf{Random Masking:} A random rectangular region covering 10\% of the image area was masked (set to zero). This augmentation was not only intended to encourage the model to learn robust feature representations by reconstructing occluded regions, but also to strategically expose the VAE to incomplete visual inputs during training. The primary motivation was to ensure that the model remains effective when applied in later stages of this thesis, particularly in masking-based counterfactual generation—where masked or altered inputs are a core component of the explanation process. Training the VAE under such conditions improves its ability to reconstruct high-fidelity outputs even when parts of the input are missing or corrupted.
+    \item \textbf{Tensor Conversion:} Images were converted to PyTorch tensors and scaled from [0, 255] to [0.0, 1.0] before being passed to the network.
+\end{itemize}
+
+
+For the testing phase, only the essential deterministic transformations were applied:
+\begin{itemize}
+    \item Image resizing to $80 \times 160$ pixels
+    \item Tensor conversion with pixel scaling
+\end{itemize}
+
+
+\subsection{Training Objective and Optimization Strategy} \label{subsec:vae_loss}
+
+This section presents the training objective and optimization strategy employed to train the Variational Autoencoder (VAE). Including these details in the methodology is essential not only for ensuring reproducibility but also for highlighting the specific design choices that enabled the VAE to learn robust latent representations—central to generating counterfactual explanations in subsequent stages of this work.
+
+The VAE is trained using a composite variational loss function, defined as:
 \[
 \mathcal{L}_{\text{VAE}} = \mathcal{L}_{\text{recon}} + \lambda_{\text{KL}} \cdot \mathcal{L}_{\text{KL}}
 \]
+where $\mathcal{L}_{\text{recon}}$ denotes the reconstruction loss, and $\mathcal{L}_{\text{KL}}$ represents the Kullback-Leibler (KL) divergence. The scalar $\lambda_{\text{KL}}$ controls the regularization strength applied to the latent space.
 
 \paragraph{Reconstruction Loss:} \label{reconstruction_loss}
-Two reconstruction losses were implemented and tested:
-\begin{itemize}
-    \item \textbf{Mean Squared Error (MSE):} Penalizes squared differences between the original and reconstructed pixel values. Suitable for pixel-level fidelity.
-    \item \textbf{Log-Cosh Loss:} More robust to outliers, behaves like MSE for small errors and like MAE for large errors.
-\end{itemize}
-The use of Log-Cosh was empirically found to produce smoother reconstructions in early training phases. This is motivated by Chen et al.~\cite{chen2019log}. So, in this thesis comparison between the MSE loss and Log-cosh loss was implemented and compared between them. The results are discussed in the \cref{Evaluation and Results}.
 
-\paragraph{KL Divergence:}
-The KL divergence regularizes the latent distribution:
+To assess the impact of different loss formulations on reconstruction quality, two reconstruction loss functions were implemented and compared:
+\begin{itemize}
+    \item \textbf{Mean Squared Error (MSE):} Measures the average squared difference between corresponding pixel intensities of the input and reconstructed images. It emphasizes pixel-level fidelity and is a standard choice in image reconstruction tasks.
+    \item \textbf{Log-Cosh Loss:} A smooth approximation of the Mean Absolute Error (MAE), which behaves like MSE for small differences and like MAE for large ones. It is more tolerant to outliers and encourages sharper reconstructions.
+\end{itemize}
+
+Empirical results showed that Log-Cosh yielded smoother and more visually coherent reconstructions during early training epochs, particularly in complex scenes. This finding is supported by prior work, such as Chen et al.~\cite{chen2019log}, and a detailed comparison is presented in \cref{subsec:vae_quant_comparison}.
+
+\paragraph{KL Divergence Regularization:}
+
+The KL divergence term ensures that the learned posterior distribution $q(z|x)$ remains close to the unit Gaussian prior $p(z) = \mathcal{N}(0, I)$:
 \[
 \mathcal{L}_{\text{KL}} = -\frac{1}{2} \sum_{i=1}^{d} \left(1 + \log\sigma_i^2 - \mu_i^2 - \sigma_i^2\right)
 \]
-It encourages the approximate posterior $q(z|x)$ to stay close to the unit Gaussian prior $p(z) = \mathcal{N}(0, I)$.
+This regularization helps enforce a well-structured latent space, enabling smooth interpolation and meaningful sampling—both of which are critical for generating plausible counterfactual samples.
 
 \paragraph{KL Weight Annealing:}
-To avoid early dominance of the KL term, we implement linear annealing:
+
+To prevent the KL term from dominating the loss function too early in training before the reconstruction objective is sufficiently optimized a linear annealing strategy was used:
 \[
 \lambda_{\text{KL}} = \min(\lambda_0 + \delta \cdot \text{epoch}, 1.0)
 \]
-where $\lambda_0 = 5 \times 10^{-5}$ and $\delta = 1 \times 10^{-4}$. This allows the model to prioritize reconstruction initially, and gradually introduce regularization.
+where $\lambda_0 = 5 \times 10^{-5}$ and $\delta = 1 \times 10^{-4}$. This allows the model to initially focus on accurate reconstruction and gradually introduce regularization, leading to a better trade-off between fidelity and latent structure.
 
 \paragraph{Training Configuration:}
-The VAE is implemented using PyTorch and trained in Python 3.11 on a Linux system an NVIDIA CUDA-enabled GPU (e.g., RTX 1080 Ti). Libraries include Torchvision, Matplotlib, NumPy, and PIL.
+
+The VAE was implemented in PyTorch and trained on a Linux-based system using Python 3.11. Computation was accelerated via an NVIDIA CUDA-enabled GPU (e.g., RTX 1080 Ti). The following hyperparameters and strategies were adopted:
 
 \begin{itemize}
-    \item Optimizer: Adam
-    \item Learning Rate: $1 \times 10^{-4}$; Weight Decay: $1 \times 10^{-5}$
-    \item Batch Size: 128
-    \item Epochs: 200
-    \item Scheduler: \texttt{ReduceLROnPlateau} (patience = 10, factor = 0.5)
-    \item Early Stopping: patience = 50
+    \item \textbf{Optimizer:} Adam, selected for its adaptive learning rate and momentum properties, which are particularly effective for optimizing non-convex objectives like those in VAEs.
+    \item \textbf{Learning Rate:} $1 \times 10^{-4}$ — empirically chosen to ensure stable gradient updates and smooth convergence.
+    \item \textbf{Weight Decay:} $1 \times 10^{-5}$ — applied as L2 regularization to prevent overfitting by penalizing large parameter magnitudes.
+    \item \textbf{Batch Size:} 128 — balances GPU memory utilization and the statistical reliability of mini-batch gradients.
+    \item \textbf{Epochs:} 200 — provides sufficient time for convergence, with early stopping to prevent overfitting.
+    \item \textbf{Learning Rate Scheduler:} \texttt{ReduceLROnPlateau}, with patience = 10 and factor = 0.5 — dynamically reduces the learning rate when validation loss stagnates, enabling finer convergence.
+    \item \textbf{Early Stopping:} Applied with a patience of 50 epochs — halts training when no validation improvement is observed, conserving computational resources.
 \end{itemize}
 
-Each epoch logs training and validation losses (total, reconstruction, KL), pixel-level accuracy, and PSNR.
+This configuration was iteratively tuned to ensure the VAE could effectively learn semantically meaningful latent codes while remaining computationally efficient. The combination of a reliable optimizer (Adam), adaptive learning rate scheduling, loss annealing, and early stopping fosters a stable training regime. Each design decision contributes to the ultimate goal of generating high-quality, realistic counterfactual explanations that remain faithful to the original data distribution.
 
-\subsection{Evaluating VAE Performance} \label{subsec:vae_evaluation}
-
-Model performance is assessed using both quantitative and qualitative metrics:
-\begin{itemize}
-\item \textbf{Reconstruction Loss:} MSE or Log-Cosh.
-\item \textbf{Pixel Accuracy:} Proportion of correctly reconstructed pixels after thresholding.
-\item \textbf{PSNR:} Perceptual quality of reconstruction.
-\item \textbf{Visual Inspection:} Periodic reconstruction samples are compared with ground truth.
-\item \textbf{Latent Space Evaluation:} Interpolation and prior sampling validate structure and continuity.
-\item \textbf{Training Curves:} Epoch-wise plots for all metrics enable trend analysis and convergence monitoring.
-\end{itemize}
-
-These evaluations confirm the VAE's capacity to learn expressive, structured representations. The empirical performance of this architecture is presented and discussed in Section~\ref{Evaluation and Results}, where its reconstruction fidelity, and latent space utility effectiveness are quantitatively and qualitatively evaluated.
+To monitor training progress, each epoch logged Total loss, Reconstruction loss, KL divergence, SSIM, and PSNR. These evaluations confirm the VAE's capacity to learn expressive, structured representations. The empirical performance of this architecture is presented and discussed in \cref{sec:vae_evaluation}, where its reconstruction fidelity, and latent space utility effectiveness are quantitatively and qualitatively evaluated.
 
 
 
-\section{Classifier Model for Prediction} \label{sec:classifier_mdel_for_prediction}
+\section{Classifier Architectures and Training Setup}
+\label{sec:classifier_architectures}
 
 
 To assess the semantic structure of the learned latent space and evaluate downstream task performance, multiple classifiers were trained using the 128-dimensional latent representations generated by the VAE encoder. Each image corresponds to a driving situation (e.g., STOP, GO, RIGHT, LEFT), and the classifiers were trained to predict the appropriate driving action class from the latent vector.
 
 Unlike conventional approaches where classifiers are trained directly on pixel-level image data, this work emphasizes feature-based classification, operating solely in the compressed and semantically meaningful latent space. This allows for efficient model training, improved interpretability, and compatibility with counterfactual explanation techniques explored later in the thesis.
 
-Five classification models were implemented and evaluated:
-\begin{itemize}
-    \item \textbf{Neural Network (MLP):} A 3-layer fully connected network with LeakyReLU activations and dropout.
-    \item \textbf{Logistic Regression:} A linear baseline model to establish separability in the latent space.
-    \item \textbf{K-Nearest Neighbors (KNN):} A non-parametric, distance based model suitable for evaluating the local structure of the latent space.
-    \item \textbf{Support Vector Machine (SVM):} A margin based classifier using a radial basis function kernel for better non-linear decision boundaries.
-    \item \textbf{Random Forest:} An ensemble based decision tree model offering robustness and interpretability.
-\end{itemize}
-
-All classifiers were trained in both binary and multi-class settings. The binary setup involved classifying between \texttt{GO} and \texttt{STOP} scenarios, while the multi-class setup extended this to include \texttt{LEFT} and \texttt{RIGHT} actions, resulting in a four-class prediction task.
-
-As detailed in Section~\ref{subsubsec:vae_encoder}, the encoder compresses each $3 \times 80 \times 160$ image into a 128-dimensional latent vector using a series of convolutional and fully connected layers. These latent vectors serve as inputs to all classifiers, forming the basis for prediction.
-
-No pixel-level image information was used during classification. The models operate solely on the semantically rich latent space learned by the VAE. This aligns with the overall objective of this work: to build interpretable and compact representations that support both classification and counterfactual explanation generation.
-
-\subsection{Classifier Architectures and Training Setup}
-
 This section describes the architecture, training configurations, and optimization strategies used for each classifier. All models were trained and evaluated using the latent feature vectors extracted from the VAE encoder. The input to each classifier is a 128-dimensional feature vectors.
 
-\subsubsection*{Neural Network Classifier (MLP)}
+\subsection{Neural Network Classifier Training (MLP)} \label{subsec:neural_network_classifier_training}
 
 A deep feedforward neural network was implemented using PyTorch to classify the latent vectors extracted from the VAE. The architecture was designed with simplicity and effectiveness in mind, specifically tailored to the 128-dimensional latent representations. This classifier is composed of three fully connected (dense) layers, each followed by batch normalization and dropout regularization, with LeakyReLU activations throughout. The details are as follows:
 
@@ -317,53 +317,61 @@ A deep feedforward neural network was implemented using PyTorch to classify the 
     The final output layer produces either 2 or 4 logits, corresponding to the binary or multi-class classification tasks, respectively. The logits represent the unnormalized scores for each class, and a softmax function is applied during loss computation (using CrossEntropy Loss) to obtain probability distributions over the classes.
 \end{itemize}
 
-This architecture was selected because it effectively balances model complexity and computational efficiency, making it well-suited for the compact and informative VAE latent space. By leveraging non-linear activations and regularization techniques, the network is capable of learning subtle distinctions between classes while mitigating overfitting, ultimately yielding strong classification performance.
+This architecture was selected because it effectively balances model complexity and computational efficiency, making it well-suited for the compact and informative VAE latent space. By leveraging non-linear activations and regularization techniques, the network is capable of learning subtle distinctions between classes while mitigating overfitting, ultimately yielding strong classification performance. The evaluation and performance comparison of this classifier, along with other traditional models trained on latent features, are discussed in Section~\ref{sec:classifier_eval}.
 
 
 
-\subsubsection*{Traditional Classifiers}
 
-To compare the neural classifier's performance with classical machine learning models, the following classifiers were implemented using the scikit-learn library:
+\subsection{Traditional Classifiers}
+\label{subsec:traditional_classifiers}
 
-\begin{itemize}
-    \item \textbf{Logistic Regression:} A linear classifier using the liblinear
-    
-    
-    solver and L2 regularization.
-    \item \textbf{K-Nearest Neighbors (KNN):} Set to $k=5$ using Euclidean distance.
-    \item \textbf{Support Vector Machine (SVM):} RBF kernel with probability estimates enabled.
-    \item \textbf{Random Forest:} Ensemble of 100 decision trees with a maximum depth determined automatically.
-\end{itemize}
+To compare the neural classifier's performance with classical machine learning models, the following classifiers were implemented using the scikit-learn library~\cite{scikit-learn}. All models were trained on 128-dimensional latent vectors extracted from the VAE encoder. The dataset was split in an 80:20 ratio for training and testing. Each model was evaluated using precision, recall, F1-score, accuracy, confusion matrix, and ROC-AUC metrics (see \cref{subsec:comparision_with_traditional_classifiers}).
 
-These models were trained on the same latent vectors as the neural network. The dataset was split into 80\% training and 20\% testing for evaluation. Metrics such as precision, recall, F1-score, confusion matrix, and ROC-AUC were computed for comprehensive analysis.
+\subsubsection{Logistic Regression: Implementation and Training}
+\label{subsubsec:logistic_regression}
+Logistic Regression was implemented as a linear baseline model using scikit-learn’s \textit{LogisticRegression}~\cite{scikit-learn} with one-vs-rest (OvR) strategy and L2 regularization. This model was used to assess how linearly separable the VAE-generated latent space is. In the multi-class configuration, the OvR strategy enabled independent binary classifiers for each class.
 
-\subsubsection*{Binary vs Multi-Class Setup}
+\subsubsection{K-Nearest Neighbors (KNN): Implementation and Training}
+\label{subsubsec:knn}
+The K-Nearest Neighbors (KNN) classifier was implemented using scikit-learn’s \textit{KNeighborsClassifier}~\cite{Cover1967} with $k=5$, employing Euclidean distance to compute nearest neighbors. KNN was used to explore how local neighborhood structure manifests in the latent feature space. As an instance-based model, it does not require explicit training and makes predictions based on majority voting among the $k$ nearest training samples.
 
-All classifiers were trained in two different settings:
-\begin{itemize}
-    \item \textbf{Binary Classification:} Predicting whether to \texttt{GO} or \texttt{STOP}, useful for early validation and simple decision-making.
-    \item \textbf{Multi-Class Classification:} Predicting one of four classes: \texttt{STOP}, \texttt{GO}, \texttt{RIGHT}, or \texttt{LEFT}, enabling fine-grained driving behavior modeling.
-\end{itemize}
+\subsubsection{Random Forest: Implementation and Training}
+\label{subsubsec:random_forest}
+Random Forest was implemented as an ensemble of 100 decision trees using scikit-learn’s \textit{RandomForestClassifier}~\cite{Breiman2001}. The model was trained with default settings, letting the maximum tree depth be inferred automatically. This ensemble-based approach allowed the model to evaluate complex decision boundaries and learn from diverse latent patterns in the data.
 
-Each setup used the same pipeline of latent feature extraction followed by classification. Evaluation was performed using the same data split and metrics across all models to enable a fair comparison.
+\subsubsection{Support Vector Machine (SVM): Implementation and Training}
+\label{subsubsec:svm}
+Support Vector Machine (SVM)~\cite{Cortes1995} was implemented using scikit-learn’s \textit{SVC} with a radial basis function (RBF) kernel and probability estimates enabled. The RBF kernel allows the model to project latent features into a higher-dimensional space, which is helpful for modeling non-linear boundaries. This configuration was used to assess the effectiveness of margin-based classification in the VAE latent space.
 
 
-\section{Feature Masking Techniques for Counterfactual Generation}
+
+
+\section{Feature Masking Techniques for Finding Counterfactual Explanations}
 \label{sec:feature_masking_pipeline}
 
-To generate counterfactual explanations (CEs), multiple feature masking strategies were employed, each with its own rationale, masking space (image or latent), and mechanism of perturbation. The objective in all these methods is consistent: identify minimal and plausible changes in the input that result in a different classification output, thus providing insight into the model decision boundary.
+To generate counterfactual explanations (CEs), multiple feature masking strategies were employed. These strategies differ in terms of their perturbation space (image space or latent space) and masking mechanism, but all aim to identify minimal changes in the input that alter the classifier’s decision.
 
 All methods follow a unified processing pipeline comprising the following steps:
+
 \begin{enumerate}
-    \item Encode the original image using a encoder of VAE to obtain a latent representation.
+    \item Encode the original image using the encoder of a Variational Autoencoder (VAE) to obtain a latent representation.
     \item Classify the latent vector using a trained classifier to obtain the original prediction.
     \item Apply a masking strategy (in image space or latent space).
     \item Reconstruct the masked or modified input using the decoder.
-    \item Re-encode and classify the reconstructed image.
-    \item Compare the new prediction with the original prediction. If different, a counterfactual explanation is identified.
+    \item Re-encode the reconstructed image and classify the new latent vector.
+    \item Compare the new prediction with the original. If different, the result is identified as a counterfactual explanation.
 \end{enumerate}
 
-The masking strategies are categorized into two groups based on the space where the perturbation is applied.
+While the decoding and re-encoding steps (Steps 4 and 5) may seem like extra effort, they play a crucial role in ensuring the quality and reliability of the generated counterfactuals. After masking certain latent features in Step 3, the modified vector may no longer represent a meaningful or valid sample. If we were to directly classify this altered latent vector, there’s a good chance the prediction would be unstable or even nonsensical. This is because the classifier has only seen latent vectors produced by the encoder during training not arbitrary, masked ones.
+
+To address this, the masked latent vector is first passed through the decoder to generate an image (Step 4). This step effectively "fills in the blanks" using the decoder’s understanding of the dataset. It acts like an inpainting mechanism that ensures the resulting image still looks realistic and semantically coherent. Then, instead of classifying this image directly, it is passed through the encoder once again (Step 5). This gives us a latent vector that the classifier can safely work with, as it now comes from the same distribution it was trained on.
+
+This extra step of decoding and re-encoding serves two important purposes. First, it keeps the modified input within the data manifold, ensuring that we're generating plausible counterfactuals rather than random noise. Second, it helps maintain the integrity of the classification process, ensuring that the classifier is not thrown off by unfamiliar or unnatural inputs.
+
+It also has an additional benefit: it allows us to visualize the counterfactual in the form of an actual image. This is especially useful in image-based domains like autonomous driving, where interpretability is just as important as accuracy. Seeing the visual differences between the original and counterfactual inputs helps us understand what specific features influenced the model’s decision.
+
+
+Furthermore, the masking techniques used in this work are broadly divided into two categories based on where the perturbation is applied: (1) masking in the image space, and (2) masking in the latent space. Each of these is discussed in detail in the following subsections.
 
 \subsection*{Image Space Masking}
 This includes Grid-Based Masking, LIME on Images, and Object Detection-Based Masking. These methods apply masking directly to the input image.
@@ -377,7 +385,7 @@ This includes Grid-Based Masking, LIME on Images, and Object Detection-Based Mas
 This includes LIME on Latent Features and LIME with nearest-unlike-neighbour (NUN). Here, perturbations are applied to the encoded latent vector.
 \begin{itemize}
     \item \textbf{LIME on Latent Features:} LIME identifies influential latent dimensions. These are replaced using strategies such as median substitution or rule-based adjustments using dataset statistics.
-    \item \textbf{LIME with NUN:} Combines LIME-based feature importance with the nearest-unlike-neighbour strategy, selecting feature replacements that are more robust and semantically meaningful.
+    \item \textbf{LIME-Guided Latent Feature Masking using NUN:} Combines LIME-based feature importance with the nearest-unlike-neighbour strategy, selecting feature replacements that are more robust and semantically meaningful. LIME-Guided Latent Feature Masking using NUN is formally called LIME with NUN throughout the thesis.
 \end{itemize}
 
 For each method, similarity metrics (SSIM, PSNR, MSE, UQI, VIFP) are computed between the original and reconstructed images to assess visual fidelity. All results, including prediction changes, classifier confidences, masking parameters, and processing time, are logged into method-specific files for analysis. If the prediction changes after masking, the example is labeled as a successful counterfactual. This analysis directly supports answering the research question outlined in \cref{sec:research_question}, particularly \textbf{RQ3}.
@@ -404,9 +412,7 @@ These configurations were chosen in alignment with the image resolution ($160 \t
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{img/masking/grid_based_masking/grid_based_masking_flow.drawio.png}
-\caption{
-Workflow of the grid-based counterfactual generation process. Grid cells are masked sequentially in two stages: a fine grid ($8 \times 16$) and a coarse grid ($4 \times 8$). Masked images are reconstructed using a VAE and re-evaluated by the classifier. A prediction change implies that the masked region was causally important.
-}
+\caption{Workflow of the grid-based counterfactual generation process. Grid cells are masked sequentially in two stages: a fine grid ($8 \times 16$) and a coarse grid ($4 \times 8$). Masked images are reconstructed using a VAE and re-evaluated by the classifier. A prediction change implies that the masked region was causally important.}
 \label{fig:grid_masking_diagram}
 \end{figure}
 
@@ -443,9 +449,7 @@ Once a cell is masked, the resulting image is passed through the encoder-decoder
 \RETURN No counterfactual explanation found
 \end{algorithmic}
 \end{algorithm}
-\vspace{1em}
-
-
+% \vspace{1em}
 
 
 Figure~\ref{fig:grid_masking_diagram} illustrates the complete grid-based masking workflow. It highlights how the original image is masked, reconstructed, and re-classified. A prediction change from \texttt{STOP} to \texttt{GO} following the masking of a grid cell demonstrates the effectiveness of this approach in revealing causally salient regions. The masked region is processed through a VAE to maintain visual plausibility, ensuring that the model’s reaction is not triggered by implausible image artifacts.
@@ -568,48 +572,50 @@ Figure~\ref{fig:object_detection_masking} illustrates a concrete example of the 
 
 The unaltered version of the image (Figure~\ref{fig:orig}) corresponds to the model's original input, for which the classifier predicts the label \texttt{STOP} with high confidence. The YOLOv5 object detector accurately identifies and localizes the STOP sign (Figure~\ref{fig:orig_bbox}), represented by a red bounding box. This is a safety-critical decision, expected in the presence of a regulatory traffic sign.
 
-To probe the causal influence of the STOP sign, the region corresponding to the bounding box is zeroed out (Figure~\ref{fig:masked}). This masked image is then passed through a Variational Autoencoder (VAE), which reconstructs the image in a smooth and naturalistic manner (Figure~\ref{fig:reconstructed}). The reconstruction effectively blurs or removes the masked STOP sign, preserving the surrounding context to remain within the data manifold.
+To probe the causal influence of the STOP sign, the region corresponding to the bounding box is zeroed out (Figure~\ref{fig:masked}). This masked image is then passed through a decoder which reconstructs the image in a smooth and naturalistic manner (Figure~\ref{fig:reconstructed}). The reconstruction effectively blurs or removes the masked STOP sign, preserving the surrounding context to remain within the data manifold.
 
-Upon re-encoding and classifying the reconstructed image, the model changes its decision from \texttt{STOP} to \texttt{GO}. This prediction flip signifies a valid counterfactual explanation: the STOP sign was a critical feature in the model’s decision process. Its removal induced a behavioral shift, indicating a direct causal pathway between the visual presence of the STOP sign and the predicted driving action.
+Upon re-encoding and classifying the reconstructed image, the model changes its decision from \texttt{STOP} to \texttt{GO}. This prediction flip signifies a valid counterfactual explanation. The STOP sign was a critical feature in the model’s decision process. Its removal induced a behavioral shift, indicating a direct causal pathway between the visual presence of the STOP sign and the predicted driving action.
 
-This example validates the semantic sensitivity of the proposed method. It reveals that object detection-based masking can expose model dependencies on interpretable, high-level visual cues, facilitating transparency in AI-driven navigation systems.
-
-
+This example validates the semantic sensitivity of the proposed method. It reveals that object detection-based masking can expose model dependencies on interpretable, high-level visual cues, facilitating transparency in AI-driven navigation systems. The corresponding results on this method and comparing the effectiveness to other methods are detailed in \cref{Evaluation and Results}.
 
 
 
-\subsection{LIME on Images} \label{sec:lime_on_images}
 
-Local Interpretable Model-Agnostic Explanations (LIME) is an explainability framework that identifies which parts of an input image are most responsible for a model’s prediction~\cite{Ribeiro2018}. It achieves this by creating local perturbations typically through masking superpixels and observing how the model’s outputs respond. In this method, we integrate LIME directly into the counterfactual generation pipeline by masking the most influential visual regions and checking whether this perturbation leads to a change in the classifier’s decision.
 
-The primary goal is to determine whether removing highly influential visual features, as identified by LIME, can lead to a change in prediction. If the prediction changes, this minimal perturbation is interpreted as a counterfactual explanation (CE), highlighting that the masked region played a causal role in the original decision.
+\subsection{LIME on Image-Based Masking}
+\label{sec:lime_on_images}
 
-The method follows the unified image masking pipeline introduced in Section~\ref{sec:feature_masking_pipeline}. First, the input image is passed through a Variational Autoencoder (VAE) to obtain a latent representation, which is classified using a downstream classifier. LIME is then applied to the raw input image to compute a saliency mask that highlights the top-$k$ positively contributing superpixels (we use $k=5$). These superpixels represent regions most influential to the classifier’s predicted label.
+Local Interpretable Model-Agnostic Explanations (LIME) is an explainability technique that identifies input regions most responsible for a model’s prediction by perturbing the input and observing the resulting changes in output probabilities~\cite{Ribeiro2018}. For image data, LIME segments the input into superpixels and perturbs the image by masking these regions, then learns a local surrogate model to approximate the classifier’s decision boundary.
 
-Rather than masking regions using hard blackouts or noise, we adopt a soft alpha-blending strategy to ensure that the perturbed image remains realistic and within the data manifold. Formally, the masked image is computed as:
-\[
-I_{\text{masked}} = (1 - \alpha) \cdot I + \alpha \cdot B \cdot M,
-\]
-where $I$ is the input image, $M$ is the binary mask from LIME, $B$ is a black background, and $\alpha$ is the blending factor (set to 0.5 in our experiments). This approach mitigates sharp edges or unnatural patterns in the masked image and improves the quality of subsequent reconstructions.
+In our method, LIME is integrated into the counterfactual generation pipeline to evaluate whether removing highly influential visual regions can lead to a prediction flip. If the classifier changes its decision after masking the top-$k$ most important superpixels, the explanation is considered a valid counterfactual explanation (CE), indicating that the masked regions had a causal impact on the prediction.
 
-The softly masked image is then passed through the VAE encoder to obtain a latent vector, which is decoded to reconstruct a realistic image. The reconstructed image is re-encoded and passed again to the classifier. If the predicted label changes after this reconstruction process, the masked region is considered causally decisive, and the outcome is recorded as a counterfactual explanation.
+We follow the unified masking pipeline described in Section~\ref{sec:feature_masking_pipeline}. First, the input image is passed through a Variational Autoencoder (VAE) to obtain a latent representation, which is then classified using a downstream classifier. LIME is applied to the \emph{raw input image} to compute a saliency mask highlighting the top-$k$ positively contributing superpixels (we use $k=5$), representing the most influential visual regions for the predicted class.
 
-Although LIME operates on image space, it does not explain the VAE instead, instead, it explains the classifier that operates on the VAE’s latent space. The predictive function passed to LIME consists of two components. First, the perturbed image is encoded by the VAE encoder to obtain a latent vector. Second, this vector is fed into the classifier to compute prediction probabilities. LIME then perturbs the input image and learns a local linear surrogate model to identify which superpixels influence the output the most. The decoder is used only after masking to produce a visually plausible image for counterfactual evaluation (see Figure~\ref{fig:lime_image_workflow}).
-
-\begin{figure}
+\begin{figure}[ht]
     \centering
     \includegraphics[width=0.95\textwidth]{img/masking/lime_on_images/lime_on_images_based_masking_flow.drawio.png}
     \caption{
-Workflow of the LIME-based counterfactual explanation pipeline. The input image is first encoded using a Variational Autoencoder (VAE) to obtain a latent representation, which is classified to produce the original label (e.g., \texttt{STOP}). LIME is then applied to the image to identify the most influential superpixels. These regions are softly masked via alpha blending and passed through the encoder-decoder pipeline for reconstruction. The reconstructed image is re-encoded and re-classified. If the classifier’s prediction changes (e.g., from \texttt{STOP} to \texttt{GO}), a counterfactual explanation is found.
-}
-\label{fig:lime_image_workflow}
+    Workflow of the LIME-based counterfactual explanation pipeline. The input image is encoded using a VAE and classified to determine the original label (e.g., \texttt{STOP}). LIME is applied to the input image to identify the most influential superpixels. These regions are then hard-masked (blacked out), and the resulting image is passed through the encoder-decoder pipeline. The reconstructed image is re-encoded and re-classified. If the predicted class changes (e.g., from \texttt{STOP} to \texttt{GO}), a counterfactual explanation is found.
+    }
+    \label{fig:lime_image_workflow}
 \end{figure}
 
-Our design is motivated by the work of Agarwal and Nguyen~\cite{agarwal2020explainingimageclassifiersremoving}, who proposed combining attribution methods such as LIME with generative inpainting to maintain visual coherence in masked images. While they focus on improving attribution maps using DeepFill-style pretrained inpainters, we propose a complementary pipeline using a domain-specific VAE trained on our driving dataset. Unlike their attribution centric approach, our goal is to explicitly generate counterfactuals minimal and plausible changes that cause a prediction shift. Moreover, our pipeline integrates the VAE not only for reconstruction but also for re-encoding, enabling end-to-end analysis within a single generative framework.
+To mask these regions, we adopt a hard masking strategy where the selected superpixels are replaced with a solid black color (i.e., pixel intensities set to zero). This masking approach is consistent with the strategies used in grid-based and object detection-based masking, promoting interpretability and ensuring uniformity across different masking techniques. The LIME-based masking operation can be formally expressed as:
 
-\vspace{1em}
-\begin{algorithm}[H]
-\caption{LIME on Images for Counterfactual Generation}
+\[
+I_{\text{masked}} = I \odot (1 - M),
+\]
+
+where \( I \) is the original image, \( M \) is the binary LIME mask corresponding to the top-$k$ superpixels, and the masked image \( I_{\text{masked}} \) is generated by blacking out these regions.
+
+Next, the masked image is passed through the VAE encoder to obtain a new latent representation, which is then decoded to reconstruct an image. This reconstructed image is re-encoded and classified again. If the predicted label changes at this stage, the masking is considered to have revealed a counterfactual explanation, indicating the causal importance of the masked regions.
+
+Although LIME operates in the image space, the explanation it provides is ultimately linked to the classifier trained on the VAE’s latent representation. The prediction function passed to LIME includes two components: (i) encoding the perturbed image using the VAE encoder to obtain the latent vector, and (ii) passing this vector to the classifier to compute prediction probabilities. The decoder is only used after masking, to generate visually coherent reconstructions required for downstream evaluation. This end-to-end workflow is visually illustrated in Figure~\ref{fig:lime_image_workflow}, and the entire algorithmic process is outlined in Algorithm~\ref{alg:lime_on_images}.
+
+
+
+\begin{algorithm}[ht]
+\caption{LIME on Images for Counterfactual Generation (Hard Masking)}
 \label{alg:lime_on_images}
 \begin{algorithmic}[1]
 \REQUIRE Image $I$, encoder $E$, decoder $D$, classifier $C$, LIME explainer $L$
@@ -620,7 +626,7 @@ Our design is motivated by the work of Agarwal and Nguyen~\cite{agarwal2020expla
 
 \STATE Generate LIME explanation: $M \leftarrow L(I, C)$
 \STATE Select top-$k$ regions: $R \leftarrow \text{Mask}(M, k=5)$
-\STATE Apply alpha-blended masking: $I_{\text{masked}} \leftarrow \text{Blend}(I, R, \alpha=0.5)$
+\STATE Apply hard masking: $I_{\text{masked}} \leftarrow I \odot (1 - R)$
 
 \STATE Encode: $z_{\text{masked}} \leftarrow E(I_{\text{masked}})$
 \STATE Decode: $I_{\text{recon}} \leftarrow D(z_{\text{masked}})$
@@ -634,14 +640,14 @@ Our design is motivated by the work of Agarwal and Nguyen~\cite{agarwal2020expla
 \RETURN No counterfactual explanation found
 \end{algorithmic}
 \end{algorithm}
+
+Compared to grid-based or object detection-based masking, LIME provides an \emph{adaptive and data-driven} approach to region selection. It focuses only on the most relevant image regions for a given prediction, enhancing interpretability and explanation quality. The corresponding results on this method and comparing the effectiveness to other methods are detailed in \cref{Evaluation and Results}.
+
+
+
+
+
 \vspace{1em}
-
-Unlike grid-based or object detection-based masking, LIME offers a data-driven, input adaptive strategy. It focuses only on regions most important for each specific image, improving interpretability and relevance. However, this comes at a higher computational cost due to multiple sampling and repeated model inference. Despite this, the method’s local precision and model-agnostic formulation make it well-suited for analyzing safety-critical systems like autonomous vehicles.
-
-
-
-
-
 \subsection{LIME-Based Masking on Latent Features} \label{sec:lime_based_masking_on_latent_features}
 
 \subsubsection*{Latent Feature Statistics Preprocessing}
@@ -664,9 +670,37 @@ Prior to this step, dataset-level statistics such as the median of each latent d
 
 As shown in the workflow in Figure~\ref{fig:lime_latent_workflow}, the VAE encoder maps the input image $I$ into a latent representation $z = E(I)$. A downstream neural classifier $C$ then provides the prediction $\hat{y}_{\text{orig}} = \arg\max C(z)$. LIME is applied on this latent vector to compute a local linear approximation of the classifier’s decision boundary and returns a list of tuples $\{(w_i, i)\}$, where $w_i$ is the importance weight of the $i$-th latent feature.
 
-Only the positively influential features (i.e., $w_i > 0$) are considered for masking. This choice ensures that we are suppressing features that actively contribute toward the current classification. Replacing negatively influential features (those working against the current class) would potentially reinforce the current decision and thus contradict the goal of counterfactual generation.
+\begin{figure}[htbp]
+\centering
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/original.png}
+        \caption*{(a) Original image}
+        \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.72\textwidth}
+        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/town7_002748.png_lime_feature_importance_class_STOP_sorted.png}
+        \caption*{(b) LIME importance plot for class \texttt{STOP}, with both weight}
+    \end{subfigure}
+    \vspace{0.5em}
+    \begin{subfigure}{0.72\textwidth}
+        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/town7_002748.png_masked_features.png}
+        \caption*{(c) Features masked using median values and their LIME weights}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/reconstructed_lime_on_features.png}
+        \caption*{(d) Reconstructed image after LIME-based masking}
+    \end{subfigure}
 
-The positively weighted features are sorted in descending order of importance, i.e., from the most impactful dimension to the least. Let $\mathcal{F} = \{i_1, i_2, \dots, i_k\}$ denote the ordered set of positively contributing latent feature indices. For each $i \in \mathcal{F}$, the feature $z_i$ is replaced by the corresponding dataset-level median $\bar{z}_i$:
+    \caption{LIME on Latent Space Masking: The original image was classified as STOP (confidence: 52.5\%). LIME identified positively contributing latent features, which were progressively replaced by their corresponding dataset-level median values. The prediction flipped to RIGHT (confidence: 48.3\%) after masking 12 features, as seen in the reconstructed image. In the LIME plot, red bars indicate features positively influencing the original prediction, while green bars indicate negative influence. The removed features likely correspond to visual elements such as traffic signals, making the reconstructed image appear navigable toward the right. A detailed analysis is provided in \cref{Evaluation and Results}}.
+
+
+\end{figure}
+
+Only the positively influential features (i.e., $w_i > 0$) are considered for masking, as shown in the sorted LIME importance plot (Figure~\ref{fig:lime_latent_example}b). This choice ensures that we are suppressing features that actively contribute toward the current classification. Replacing negatively influential features (those working against the current class) would potentially reinforce the current decision and thus contradict the goal of counterfactual generation.
+
+The positively weighted features are sorted in descending order of importance, i.e., from the most impactful dimension to the least (Figure~\ref{fig:lime_latent_example}b). Let $\mathcal{F} = \{i_1, i_2, \dots, i_k\}$ denote the ordered set of positively contributing latent feature indices. For each $i \in \mathcal{F}$, the feature $z_i$ is replaced by the corresponding dataset-level median $\bar{z}_i$:
+
 
 \[
 z_i^{\text{masked}} = 
@@ -676,12 +710,20 @@ z_i & \text{otherwise}
 \end{cases}
 \]
 
-The modified latent vector is then passed through the decoder to reconstruct an image $I_{\text{recon}} = D(z^{\text{masked}})$. This image is re-encoded and classified again to obtain a new prediction $\hat{y}_{\text{new}} = \arg\max C(E(I_{\text{recon}}))$. If $\hat{y}_{\text{new}} \ne \hat{y}_{\text{orig}}$, the explanation is accepted as a valid counterfactual.
+The modified latent vector is then passed through the decoder to reconstruct an image $I_{\text{recon}} = D(z^{\text{masked}})$ (Figure~\ref{fig:lime_latent_example}c). This image is re-encoded and classified again to obtain a new prediction $\hat{y}_{\text{new}} = \arg\max C(E(I_{\text{recon}}))$. If $\hat{y}_{\text{new}} \ne \hat{y}_{\text{orig}}$, the explanation is accepted as a valid counterfactual explanation. The corresponding LIME weights and masked features are visualized in Figure~\ref{fig:lime_latent_example}(d).
 
-\begin{figure}
+
+
+\begin{figure}[h]
     \centering
-    \includegraphics[width=0.95\linewidth]{img//masking//lime_on_latent/LIME_on_latent_space_masking.drawio.png}
-    \caption{Enter Caption}
+    \includegraphics[width=0.95\linewidth]{img//masking/lime_on_latent/LIME_on_latent_space_masking.png}
+    \caption{Workflow of the LIME-based masking method applied in the latent space of a Variational Autoencoder (VAE). 
+    The input image is first encoded to a 128-dimensional latent vector. A classifier trained on the latent space predicts the original label (e.g., \texttt{STOP}). 
+    LIME is used to determine the top contributing latent features towards this prediction. These features are replaced one by one with their corresponding dataset-level median values (precomputed and stored). 
+    Each masked latent vector is decoded to reconstruct a perturbed image, which is then re-encoded and re-classified. 
+    If the classifier prediction changes (e.g., to \texttt{GO}), a counterfactual explanation is recorded. 
+    The process leverages statistical feature replacement to ensure semantic plausibility, and early stopping is used to identify the minimal set of influential latent dimensions required to flip the decision.
+    }
     \label{fig:lime_latent_workflow}
 \end{figure}
 
@@ -716,18 +758,15 @@ The full procedure is detailed in Algorithm~\ref{alg:lime_on_latent}, and the co
 \end{algorithm}
 \vspace{1em}
 
-This method provides a more abstract yet powerful mechanism for generating counterfactuals, as it operates on high-level learned features. The use of dataset-informed median values ensures semantic consistency, while early stopping improves efficiency. Interpretability is further enhanced by generating visualizations such as LIME importance bar plots and masked feature maps, which are discussed in the Evaluation and Results section.
+This method provides a more abstract yet powerful mechanism for generating counterfactuals, as it operates on high-level learned features. The use of dataset-informed median values ensures semantic consistency, while early stopping improves efficiency. Interpretability is further enhanced by generating visualizations such as LIME importance bar plots and masked feature maps, and effectiveness and performance comparasion with other masking methods are discussed in the \cref{sec:masking_eval}.
 
 
 
 
 
+\subsection{LIME-Guided Latent Feature Masking using NUN} \label{lime_with_NUN}
 
-\subsection{LIME-Based Masking on Latent Features using NUN} \label{lime_with_NUN}
-
-
-In this work, we extend the counterfactual explanation strategy introduced by Wijekoon et al.~\cite{WijekoonWNMPC21} to the domain of deep generative models. While originally applied to tabular data, we adapt their approach to the latent space of image representations learned by a Variational Autoencoder (VAE). Specifically, we implement \textbf{Method 2}, in which LIME is applied to the latent vector of a \textit{Nearest Unlike Neighbor} (NUN) to guide feature replacement in the query representation until a class change is achieved.
-
+In this work, we extend the counterfactual explanation strategy introduced by Wijekoon et al.~\cite{WijekoonWNMPC21} to the domain of deep generative models. While originally applied to tabular data, we adapt their approach to the latent space of image representations learned by a Variational Autoencoder (VAE) which is again a tabular data. Specifically, we implement Method 2, in which LIME a post-hoc method is applied to the latent vector of a \textit{Nearest Unlike Neighbor} (NUN) to guide feature replacement in the query representation until a class change is achieved.
 
 Given an input image \( x \), we encode it into a latent vector \( z \) using a pretrained VAE encoder \( E \), and obtain its predicted class \( y = \arg\max C(z) \) from a trained classifier \( C \). We then identify the Nearest Unlike Neighbor \( \hat{z} \), which belongs to a different predicted class \( \hat{y} \ne y \), by computing the Euclidean distance in the latent space:
 
@@ -735,19 +774,17 @@ Given an input image \( x \), we encode it into a latent vector \( z \) using a 
 \hat{z} = \arg\min_{z_j \in \mathcal{D}_{\text{test}}} \left\{ \| z - z_j \|_2 \; \middle| \; C(z_j) \ne y \right\}
 \]
 
-This NUN latent vector represents a semantically close alternative that results in a different classification outcome, and thus serves as a candidate for counterfactual generation.
+This NUN latent vector represents a semantically similar example that yields a different classification, and thus serves as a candidate for counterfactual explanation generation.
 
-
-To prioritize the most relevant feature changes, we apply the \textit{LIME Tabular Explainer}~\cite{Ribeiro2018} on the NUN vector \( \hat{z} \). LIME generates a local surrogate model that assigns importance weights to each latent feature, resulting in an ordered list:
+To prioritize the most relevant feature changes, we apply the \textit{LIME Tabular Explainer}~\cite{Ribeiro2018} to the NUN vector \( \hat{z} \). LIME generates a local surrogate model that assigns importance weights to each latent feature, resulting in an ordered list:
 
 \[
 \text{AFOrderLIME}(\hat{z}) = \{ i_1, i_2, \dots, i_m \}, \quad \text{where } |w_{i_1}| > |w_{i_2}| > \dots > |w_{i_m}|
 \]
 
-These weights indicate how much each latent feature contributes to the predicted class of the NUN. We use this ranking to iteratively transfer features from \( \hat{z} \) to \( z \).
+These weights reflect how much each latent feature contributes to the predicted class of the NUN. We use this ranking to iteratively transfer features from \( \hat{z} \) to the query vector that is input image vector\( z \).
 
-
-Following the LIME importance order, we replace each latent dimension \( z[i_k] \leftarrow \hat{z}[i_k] \) and reconstruct the modified latent vector \( z' \). The reconstruction \( x' = D(z') \) is passed through the encoder and classifier again to determine whether a class change has occurred. This process continues until the prediction flips, ensuring that we identify a minimal set of feature modifications necessary to generate a counterfactual. The complete procedure is presented in Algorithm~\ref{alg:nun_lime}
+Following the LIME importance order, each dimension is replaced via \( z[i_k] \leftarrow \hat{z}[i_k] \), and the modified latent vector \( z' \) is reconstructed into an image \( x' = D(z') \). The reconstructed image is re-encoded and re-classified to determine whether a class change has occurred. This process continues until the prediction flips, identifying a minimal set of latent features required to finding a counterfactual explanation. The complete procedure is summarized in Algorithm~\ref{alg:nun_lime} and the workflow is is shown in Figure~\ref{fig:nun_lime}
 
 \begin{figure}[htbp]
     \centering
@@ -757,9 +794,30 @@ Following the LIME importance order, we replace each latent dimension \( z[i_k] 
 \end{figure}
 
 
-An illustration of this feature transfer mechanism is shown in Figure~\ref{fig:nun_lime}. The left column depicts the latent features of the input image, while the right column represents the features of its NUN. LIME-assigned importance is indicated through color-coded bars. Features with higher importance are prioritized during transfer from the NUN to the input. Arrows between the two vectors highlight the flow of values during the masking process.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{img/masking/lime_on_latent_nun/lime_on_latent_featuring_using_NUN.png}
+    \caption{
+    Workflow of the LIME-Guided Latent Feature Masking using Nearest Unlike Neighbor (NUN). 
+    Step 1: The query image is encoded into a 128-dimensional latent vector using the VAE encoder and classified to obtain the original prediction (\texttt{STOP}).  
+    Step 2: A latent vector from the test set with a different class prediction (NUN) is selected based on Euclidean proximity. LIME is applied to the NUN to rank the most influential latent features contributing to its class. These top-k features are iteratively transferred from the NUN to the query latent vector.  
+    Step 3: After each replacement, the latent vector is decoded to an image, re-encoded, and re-classified. If the prediction changes (e.g., to \texttt{GO}), the replaced features are considered causally decisive, and the outcome is recorded as a counterfactual explanation.
+    }
+    \label{fig:nun_lime}
+\end{figure}
 
 
+An illustration of this feature transfer mechanism is shown in Figure~\ref{fig:nun_lime}. The left column depicts the latent features of the input image, while the right column represents the features of its NUN. LIME-assigned importance is indicated through color-coded bars. Features with higher importance are prioritized during transfer from the NUN to the query. Arrows between the two vectors highlight the flow of values during the masking process.
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{img//masking//lime_on_latent_nun/town7_000695.png_side_by_side.png}
+    \caption{
+    This is Visual Comparison of LIME guided Latent feature masking using Nearest Unlike Neighbor(NUN) with respect to input image of my dataset. LEFT: Example of the query image which is first classified as STOP. NUN is derived from a semantically similar image (middle), but classified as GO. Right: The reconstructed image where counterfactual explanation is found.
+    }
+    \label{fig:nun_cf_side_by_side}
+\end{figure}
 
 
 \begin{algorithm}[htbp]
@@ -806,7 +864,7 @@ An illustration of this feature transfer mechanism is shown in Figure~\ref{fig:n
 \end{algorithm}
 
 
-This approach leverages LIME’s interpretability and the semantic richness of the latent space to generate actionable counterfactuals. It ensures minimal intervention while maintaining high visual fidelity, and directly aligns with the counterfactual generation principles outlined by Wijekoon et al.~\cite{WijekoonWNMPC21}.
+This approach leverages LIME’s interpretability and the semantic richness of the latent space to generate actionable counterfactuals. It ensures minimal intervention while maintaining high visual fidelity, and directly aligns with the counterfactual generation principles outlined by Wijekoon et al.~\cite{WijekoonWNMPC21}. The corresponding results on this method and comparing the effectiveness to other methods are detailed in \cref{sec:masking_eval}.
 
 
 

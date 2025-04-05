@@ -325,7 +325,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Page layout
 \RequirePackage{geometry}
-\RequirePackage[automark]{scrlayer-scrpage}
+\RequirePackage[automark]{scrlayer-scrpage} %header and footer are set using the scrlayer-scrpage package
 
 % could be used to change the page geometry but scrreprt's default are fine
 % \geometry{body={140mm,210mm},footskip=12mm}
@@ -354,7 +354,7 @@
 
 \newenvironment{symbols}
 {
-    \chapter*{Summary of Notation} % Ensure this correctly places the title
+    \chapter*{Summary of Notation}
     \noindent\begin{tabbing}
 {
     \end{tabbing}
