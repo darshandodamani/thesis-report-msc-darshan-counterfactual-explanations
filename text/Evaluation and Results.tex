@@ -6,15 +6,15 @@ This chapter presents the evaluation strategy and experimental findings, structu
 
 \vspace{-1em}
 
-\paragraph{Evaluation:}The VAE is evaluated on two primary fronts: (i) the fidelity of reconstructed images, and (ii) the semantic usefulness of the latent representations for downstream classification. To this end, multiple classifiers—including MLP, SVM, KNN, Logistic Regression, and Random Forest—are trained on the latent vectors extracted by the encoder. Classification performance is assessed for both binary (GO vs. STOP) and multi-class (GO, STOP, LEFT, RIGHT) tasks. Evaluation metrics include reconstruction loss, pixel accuracy, PSNR, classification accuracy, precision, recall, and F1-score.
+\paragraph{Evaluation:}The VAE is evaluated on two primary fronts: (i) the fidelity of reconstructed images, and (ii) the semantic usefulness of the latent representations for downstream classification. To this end, multiple classifiers—including MLP, SVM, KNN, Logistic Regression, and Random Forest—are trained on the latent vectors extracted by the encoder. Classification performance is assessed for both binary (GO vs. STOP) and multi-class (GO, STOP, LEFT, RIGHT) tasks. Evaluation metrics include reconstruction loss, SSIM, PSNR, classification accuracy, precision, recall, and F1-score.
     
 \vspace{1em}
 
-\textbf{RQ1:} \textit{How can loss function modifications in Variational Autoencoders (VAEs) optimize image reconstruction quality in autonomous driving tasks?} 
+\textbf{RQ2:} \textit{How can loss function modifications in Variational Autoencoders (VAEs) optimize image reconstruction quality in autonomous driving tasks?} 
 
 \vspace{-1em}
 
-\paragraph{Evaluation:}Compare the image quality Structural Similarity Index (SSIM) and Peak Signal-to-Noise Ratio (PSNR) and classification metrics (accuracy, F1) between a standard VAE and one using modified loss functions. This will include both quantitative analysis and qualitative visualizations of reconstructed images.
+\paragraph{Evaluation:}Compare the image quality Structural Similarity Index (SSIM) and Peak Signal-to-Noise Ratio (PSNR) and classification metrics (accuracy, F1) between a standard VAE and one using modified loss functions (logcosh loss). This will include both quantitative analysis and qualitative visualizations of reconstructed images.
 
 \vspace{1em}
     
@@ -22,13 +22,18 @@ This chapter presents the evaluation strategy and experimental findings, structu
 
 \vspace{-1em}
 
-\paragraph{Evaluation:} To assess each method, the following criteria are measured during CE generation:
-    \begin{itemize}
-        \item \textbf{Coverage:} Proportion of total inputs for which valid counterfactual explanations are successfully generated.
-        \item \textbf{Computational Cost:} Average time taken per sample for each method.
-        \item \textbf{Failure Rate:} Percentage of inputs for which no counterfactual explanations was found.
-        \item \textbf{Method Overlap:} Instances where multiple masking techniques generate the same counterfactual explanations.
-        \item \textbf{Visual Quality:} SSIM, and PSNR metrics between original and reconstructed images.
+
+
+\paragraph{Evaluation:} To compare the five counterfactual generation methods, we use the following evaluation dimensions:
+    \begin{itemize} 
+        \item \textbf{Coverage:} The percentage of input samples for which a valid counterfactual explanation is found. A valid CE is one that causes a change in the classifier's prediction after masking and reconstruction.
+        
+        \item \textbf{Failure Rate:} The proportion of inputs for which the method fails to generate a counterfactual. This includes cases where the masked reconstruction does not lead to a prediction flip.
+    
+        \item \textbf{Computational Cost:} The average time taken (in seconds) to generate a counterfactual for each input. This reflects the practical usability and scalability of the masking strategy.
+    
+        \item \textbf{Method Overlap:} The number and percentage of cases where multiple methods yield the same counterfactual outcome (i.e., same final predicted label after masking). This metric helps evaluate the redundancy or uniqueness of each technique.
+
     \end{itemize}
 
     All masking methods are applied to the same dataset split, using identical model checkpoints for the VAE and classifier. This ensures fair and consistent comparisons across metrics.
@@ -254,47 +259,106 @@ These qualitative results further confirms that adopting the Log-Cosh loss, as m
 
 
 %\vspace{1em}
-\subsection{Latent Space Visualization and Separability} \label{subsubsec:vae_latent_space}
+\subsection{Latent Space Visualization and Separability}
+\label{subsubsec:vae_latent_space}
 
-Beyond reconstruction fidelity, an essential aspect of the VAE's role in this thesis is to produce semantically rich and class-discriminative latent representations that can serve downstream classifiers and interpretability frameworks. To explore this, dimensionality reduction techniques were applied to the 128-dimensional latent vectors obtained from the test dataset using the final logcosh trained model.
+An essential objective of the VAE in this thesis is not only to reconstruct driving scene images, but also to learn a semantically meaningful and class-discriminative latent representation that can support downstream classification and interpretability. To qualitatively examine the structure of the latent space, dimensionality reduction techniques were applied to the 128-dimensional latent vectors produced by the trained VAE encoder.
 
-Figures~\ref{fig:pca_true} and~\ref{fig:pca_pred} show the latent space compressed to two principal components using PCA, with each point color-coded by either the true class label or the classifier predicted label. The projections reveal clear and compact clusters for classes like \texttt{STOP} and \texttt{RIGHT}, while \texttt{GO} and \texttt{LEFT} appear more entangled suggesting potential ambiguities in those classes' feature space.
+The latent vectors extracted from the test dataset were projected into two dimensions using Principal Component Analysis (PCA) and t-Distributed Stochastic Neighbor Embedding (t-SNE). These projections were visualized with both the ground-truth class labels and the labels predicted by the downstream classifier. The PCA visualizations are shown in Figures~\ref{fig:pca_true} and~\ref{fig:pca_pred}, while Figures~\ref{fig:tsne_true} and~\ref{fig:tsne_pred} show the t-SNE embeddings.
 
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[b]{0.49\textwidth}
         \includegraphics[width=\textwidth]{img/vae_results/pca_latent_space_true_labels.png}
-        \caption{PCA projection of latent vectors from the test set, colored by true class labels.}
+        \caption{PCA projection of latent vectors, colored by true labels.}
         \label{fig:pca_true}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.49\textwidth}
         \includegraphics[width=\textwidth]{img/vae_results/pca_latent_space_predicted_labels.png}
-        \caption{PCA projection of latent vectors, colored by classifier-predicted labels.}
+        \caption{PCA projection of latent vectors, colored by predicted labels.}
         \label{fig:pca_pred}
     \end{subfigure}
 \end{figure}
-
-To uncover more nuanced non-linear relationships, t-SNE was applied. Figures~\ref{fig:tsne_true} and~\ref{fig:tsne_pred} visualize these embeddings, revealing denser local clusters and class-wise groupings that validate the VAE’s capacity to capture semantically meaningful structure—even without explicit supervision during training.
 
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[b]{0.49\textwidth}
         \includegraphics[width=\textwidth]{img/vae_results/tsne_latent_space_true_labels.png}
-        \caption{t-SNE projection of latent space using true labels. Localized clustering is evident for most classes.}
+        \caption{t-SNE projection of latent vectors, colored by true labels.}
         \label{fig:tsne_true}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.49\textwidth}
         \includegraphics[width=\textwidth]{img/vae_results/tsne_latent_space_predicted_labels.png}
-        \caption{t-SNE projection of latent space using predicted labels. Model-predicted clusters mirror semantic grouping.}
+        \caption{t-SNE projection of latent vectors, colored by predicted labels.}
         \label{fig:tsne_pred}
     \end{subfigure}
+    \caption{Latent space projections using PCA and t-SNE. Left: color-coded by true labels. Right: color-coded by classifier predictions.}
+    \label{fig:latent_space_visualizations}
 \end{figure}
 
-These visualizations Figures~\ref{fig:pca_true} and~\ref{fig:pca_pred}, and Figures~\ref{fig:tsne_true} and~\ref{fig:tsne_pred} indicate that the VAE latent space exhibits both global and local separability. While PCA suggests broad class groupings, t-SNE highlights fine-grained clusters. The relative alignment between true and predicted label distributions further confirms that the latent features are discriminative and conducive to effective classification.
+These visualizations are instrumental in exploring how the VAE organizes semantically similar samples in latent space. PCA, being a linear technique, provides insight into global structure and class spread, while t-SNE captures fine-grained, non-linear relationships that highlight local class groupings. Notably, the \texttt{STOP} and \texttt{RIGHT} classes form more compact clusters, while \texttt{GO} and \texttt{LEFT} appear relatively scattered, suggesting potential entanglement in their representations.
 
-This supports the hypothesis that the VAE encodes compact, informative, and semantically meaningful representations from high-dimensional input data, successfully addressing the goals of \textbf{RQ1}.
+To complement these visual observations, several quantitative metrics were computed:
+
+\begin{itemize}
+    \item \textbf{Explained Variance (PCA):} As shown in Table~\ref{tab:pca_explained_variance}, the first three principal components captured only 9.76\% of the total variance, indicating a highly distributed latent structure that cannot be adequately visualized in two or three dimensions alone.
+    
+    \item \textbf{Silhouette Score:} The silhouette score of $-0.0088$ (Table~\ref{tab:silhouette_score}) indicates that the class-wise clusters in the latent space are not well-separated overall. This suggests that while some local grouping exists, the global separability is weak.
+
+    \item \textbf{Centroid Distance Matrix:} Table~\ref{tab:centroid_distance_matrix} presents the pairwise Euclidean distances between class centroids in the latent space. The \texttt{STOP} class is most distant from the others, while \texttt{GO} and \texttt{LEFT} show high proximity (0.897), supporting the observed visual overlap in t-SNE and PCA plots.
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Explained Variance by Top 3 PCA Components}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Component} & \textbf{Explained Variance Ratio} & \textbf{Cumulative Variance} \\
+\midrule
+PC1 & 3.43\% & 3.43\% \\
+PC2 & 3.20\% & 6.63\% \\
+PC3 & 3.13\% & 9.76\% \\
+\bottomrule
+\end{tabular}
+\label{tab:pca_explained_variance}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Latent Space Centroid Distance Matrix (Euclidean)}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Class} & \textbf{STOP} & \textbf{GO} & \textbf{RIGHT} & \textbf{LEFT} \\
+\midrule
+STOP   & 0.00 & 1.013 & 0.916 & 0.971 \\
+GO     & 1.013 & 0.00 & 0.892 & 0.898 \\
+RIGHT  & 0.916 & 0.892 & 0.00 & 0.839 \\
+LEFT   & 0.971 & 0.898 & 0.839 & 0.00 \\
+\bottomrule
+\end{tabular}
+\label{tab:centroid_distance_matrix}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Silhouette Score of VAE Latent Space}
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Silhouette Score & $-0.0088$ \\
+\bottomrule
+\end{tabular}
+\label{tab:silhouette_score}
+\end{table}
+
+These findings highlight a core tradeoff in VAE training: while the KL divergence term promotes smooth and continuous latent distributions, it may limit the emergence of strongly separable class clusters—particularly when visual overlap exists in the input domain (e.g., \texttt{GO} and \texttt{LEFT} situations in urban driving scenes).
+
+Importantly, the VAE was trained in a completely unsupervised manner, without using any class labels. The latent structure observed here emerges naturally from the model's objective of reconstructing driving scenes while aligning with a Gaussian prior. This makes the latent space visualizations and metrics critical for evaluating the VAE’s representational quality, as well as its suitability for downstream tasks such as classification and counterfactual explanation generation, addressed in subsequent sections.
+
+
 
 
 
@@ -511,12 +575,31 @@ These findings empirically support the hypothesis posed in RQ1 that deep generat
 
 
 
+% \clearpage
+% \section{Reason for Re-Encoding in Effective Counterfactual Generation}
+% A critical empirical observation in our evaluation was the impact of the re-encoding step on the success of counterfactual explanation (CE) generation. In many cases, directly classifying the latent representation obtained from a masked image did not result in a label change. However, once the masked latent was decoded into an image and re-encoded through the VAE, the classifier frequently predicted a different class, resulting in successful CE discovery.
+
+% To quantify this behavior, we compared:
+% \begin{itemize}
+%     \item The latent vector of the original image ($z_\text{orig}$),
+%     \item The latent vector obtained by encoding the masked input ($z_\text{masked}$),
+%     \item The latent vector obtained by re-encoding the reconstructed image ($z_\text{re-encoded}$).
+% \end{itemize}
+
+% While $z_\text{masked}$ often deviated significantly from $z_\text{orig}$, it remained ineffective at inducing a class change. In contrast, $z_\text{re-encoded}$—despite also being numerically distinct—frequently resided in a different class region in the latent space, leading to successful counterfactual classification. This shows that the decoder effectively fills in masked information with plausible content, and the re-encoding step maps the image back to a region where the classifier's decision boundary becomes sensitive to the modified features.
+
+% This observation is further validated by high CE generation rates in methods using this decode-reencode pipeline (e.g., LIME on Latent, Grid-Based Masking, Object Detection Masking). Metrics such as proximity and sparsity support this finding by highlighting that only minimal but semantically important latent changes are needed to flip the classifier’s decision—something the decoder enables implicitly.
+
+% These results affirm the decoder's essential role not only in maintaining visual fidelity but also in producing counterfactuals that are realistic and interpretable.
 
 
 
+\clearpage
 
 \section{Evaluation of Counterfactual Explanation Generation via Masking Techniques (RQ3)} \label{sec:masking_eval}
-To address \textbf{RQ3}, we performed a comprehensive evaluation of all implemented masking techniques across multiple dimensions counterfactual coverage, computational efficiency, method overlap, and robustness. While object detection masking was initially considered, it was excluded from overlap analysis due to low detection rates and missed regions in the current dataset, resulting in poor counterfactual explanation coverage.
+To address RQ3, we evaluate the quality and efficiency of counterfactual explanations generated using multiple feature masking techniques which are explained in the \cref{sec:feature_masking_pipeline}. Each method is assessed using metrics commonly adopted in counterfactual explanation literature~\cite{DELANEY2023103995, chan2022comparativestudyfaithfulnessmetrics, Singh1622975, MARKUS2021103655, DBLP:journals/corr/abs-1905-07697}, including Validity, Runtime, Sparsity, Proximity, Method Overlap, and Failure Rate. These metrics capture both the effectiveness (e.g., class change, semantic integrity, sparsity of perturbation) and efficiency (e.g., runtime, proximity) of the generated counterfactuals.
+All experiments use the same VAE encoder and classifier checkpoints and are performed on identical data splits to ensure consistency and fair comparison across masking methods.
+While object detection masking was initially considered, it was excluded from overlap analysis due to low detection rates and missed regions in the current dataset, resulting in poor counterfactual explanation coverage.
 
 \subsection{Counterfactual Generation Coverage}
 We first measured the number of successful counterfactuals generated by each masking method across the binary and multi-class datasets. Figures~\ref{fig:ce_count_binary} and \ref{fig:bar_chart_ce_count_multi} illustrate the total number of counterfactual explanations generated by each method, respectively.
@@ -610,6 +693,57 @@ LIME on Latent NUN& \textbf{94.88} & \textbf{97.44} & Highest performance and ge
 These findings indicate that LIME on Latent NUN based masking is consistently effective across both binary and multi-class settings. The Grid-Based method performs well in multi-class but is less effective in binary scenarios when finer granularity is required.
 
 
+
+\subsection{Sparsity and Proximity Analysis}
+
+To further assess the minimality and fidelity of generated counterfactual explanations, two commonly used metrics were evaluated: \textbf{Sparsity} and \textbf{Proximity}. These metrics help quantify how localized the changes are (sparsity) and how similar the counterfactual is to the original input (proximity), both of which are essential criteria for human-acceptable and interpretable counterfactuals.
+
+\begin{itemize}
+    \item \textbf{Sparsity} refers to the number of features or regions that were modified to flip the prediction. 
+    \begin{itemize}
+        \item In \textit{LIME on Latent feature masking (Median)} and \textit{LIME on Latent using NUN}, sparsity was calculated as the number of latent dimensions replaced. These values were logged during counterfactual generation under the column \texttt{Features Replaced}.
+        \item For \textit{Grid-Based Masking}, sparsity was computed based on the number of grid patches masked in the image. Since the masking method stores the number of masked patches explicitly (e.g., 3 out of 128 patches), these values were extracted from the \texttt{Masked Patches} column in the output logs.
+        \item In \textit{LIME on Image}, the sparsity was treated as 128 in all cases, since masking the image space typically involved zeroing out all LIME-selected superpixels, leading to maximum perturbation.
+    \end{itemize}
+    
+    \item \textbf{Proximity} measures the L2 distance between the original and counterfactual samples. 
+    \begin{itemize}
+        \item In all methods, proximity was computed in the \textbf{latent space} as the Euclidean (L2) norm between the original latent vector $\mathbf{z}$ and the masked/reconstructed counterfactual latent vector $\mathbf{z'}$:
+        \[
+        \text{Proximity} = \|\mathbf{z} - \mathbf{z'}\|_2
+        \]
+        \item This ensures consistent comparison across methods since all counterfactuals are ultimately evaluated in the same latent space, where the classifier operates. The proximity values were logged under the \texttt{Proximity} column for each generated counterfactual.
+    \end{itemize}
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{Avg. Sparsity} & \textbf{Avg. Proximity} & \textbf{Coverage (\%)} & \textbf{Failure Rate (\%)} \\
+\midrule
+Grid-Based Masking       & 60.2    & 5.9   & 98.89 & 1.11 \\
+LIME on Latent (Median)  & \textbf{2.3}     & \textbf{0.25}  & 12.26 & 87.74 \\
+LIME on Latent NUN       & 75.3    & 7.4   & 97.44 & 2.56 \\
+LIME on Image            & 128.0   & 25.2  & 87.65 & 12.35 \\
+\bottomrule
+\end{tabular}
+\caption{Average sparsity and proximity of successful counterfactuals across masking methods (multi-class setup).}
+\label{tab:sparsity_proximity}
+\end{table}
+
+\vspace{0.8em}
+
+While sparsity and proximity are core evaluation metrics in counterfactual explanation literature, their reliability varies depending on the domain of intervention. In latent-space masking methods, these metrics are well-defined and tractable: sparsity corresponds to the count of altered latent dimensions, and proximity is computed as the Euclidean distance between original and counterfactual latent vectors—both of which lie in a structured, continuous space learned by the VAE.
+
+However, for image-based masking techniques such as grid masking and LIME on image, these metrics become less interpretable. Sparsity in image space reflects the number of masked regions but does not consider their semantic content or spatial impact. More critically, proximity is computed in latent space after re-encoding the masked image. Since masked inputs may fall outside the VAE's training distribution, the resulting proximity values can be distorted due to artifacts introduced during reconstruction.
+
+Therefore, while we report sparsity and proximity across all methods for completeness, we emphasize that these metrics are most meaningful and comparable within latent-space masking pipelines. Caution is advised when interpreting or comparing these values across fundamentally different domains of intervention.
+
+
+
+
 \subsection{Per-Class Counterfactual Explanantions Success}
 Table~\ref{tab:classwise_ce_multi} reports the number of valid counterfactuals generated per class.
 
@@ -632,34 +766,7 @@ LIME on Latent NUN & 98.6  & 96.0  & 97.2  & 99.6  & \textbf{2360} & \textbf{97.
 
 The table shows that while most methods effectively capture STOP and GO transitions, LIME on Latent NUN exhibits the most balanced performance across all classes, closely followed by the Grid-Based method.
 
-\subsection{Visual Quality of Counterfactual Explanations} \label{subsec:visual_quality}
-In addition to quantitative metrics such as coverage and class validity, we evaluated the perceptual quality of generated counterfactuals using Structural Similarity Index (SSIM) and Peak Signal-to-Noise Ratio (PSNR). These metrics measure how visually and structurally close the reconstructed image is to the original, thus reflecting the semantic plausibility of the explanation.
 
-Figures~\ref{fig:ssim_boxplot} and \ref{fig:psnr_boxplot} present the box plots for SSIM and PSNR across the different masking techniques.
-
-LIME on Latent feature masking using NUN method, LIME on Latent feature masking, and Grid-Based masking methods show high SSIM values (above 0.7) and PSNR in the 25--30 dB range, indicating sharp, semantically meaningful reconstructions. In contrast, LIME on Images results in low SSIM and PSNR due to zero-masking of important regions, which severely disrupts VAE reconstruction quality. These reconstructions often appear blurry or distorted. Object Detection-based masking shows moderate SSIM and PSNR, with high variance attributed to unreliable object detection results.
-
-
-Overall, LIME on Latent NUN not only achieves high counterfactual success but also preserves image quality, making it suitable for interpretable and user-trustworthy explanations in real-world scenarios.
-
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{img/masking_results/ssim_boxplot_4_class.png}
-    \caption{
-        SSIM comparison across methods in the multi-class setting. SSIM values range from 0.0 to 1.0, where 1.0 indicates perfect structural similarity (images are visually identical in structure, contrast, and luminance), and 0.0 indicates no similarity. Higher SSIM values reflect more realistic and semantically faithful counterfactual reconstructions. Methods like latent feature space masking and Grid-Based masking generally achieve better perceptual quality.
-    }
-    \label{fig:ssim_boxplot}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.85\textwidth]{img/masking_results/psnr_boxplot_4_class.png}
-    \caption{
-        PSNR comparison across methods in the 4-class setting. PSNR (Peak Signal-to-Noise Ratio) measures pixel-level similarity in decibels (dB). Higher values (typically above 25 dB) indicate sharper, less noisy reconstructions. Lower PSNR suggests significant deviation from the original image. Grid-Based and latent-space masking techniques yield the highest PSNR values, while image-space LIME results in noticeable quality loss.
-    }
-    \label{fig:psnr_boxplot}
-\end{figure}
 
 
 \vspace{1em}
@@ -671,7 +778,7 @@ Although LIME on Latent NUN based masking produces high-quality explanations, it
 
 
 \subsection{Qualitative Examples of Counterfactual Explanations} \label{subsubsec:qualitative_examples}
-To complement the quantitative evaluation of counterfactual explanation ussing different masking methods, qualitative visual analyses were conducted to assess the visual plausibility, semantic preservation, and discriminative alterations introduced by each masking technique. These visual examples help contextualize how each method perturbs the input to find counterfactual explanations that lead to prediction changes.
+To complement the quantitative evaluation of counterfactual explanation using different masking methods, qualitative visual analyses were conducted to assess the visual plausibility, semantic preservation, and discriminative alterations introduced by each masking technique. These visual examples help contextualize how each method perturbs the input to find counterfactual explanations that lead to prediction changes.
 
 Individual counterfactual examples for all five masking methods Grid-Based Masking, Object Detection-Based Masking, LIME on Image, LIME on Latent Features, and LIME on Latent using NUN are provided in \cref{sec:feature_masking_pipeline} (see Figures~\ref{fig:grid_ce_example}--\ref{fig:object_detection_masking}). Each figure narratively presents:
 
@@ -750,6 +857,9 @@ The results demonstrates that:
     \item Although LIME based masking on Images performs well in certain scenarios, its higher execution time and lower effectiveness for LEFT transitions reduce its appeal. For visual purpose these images are really distorted and added with more noise after reconstruction, the reason is because after the masking LIME covers most of the important region where it is masked the pixels with zero. The VAE is not trained on these kind of images the reconstrcutions are really bad.
     \item Objcet detection based masking on images performs very bad as YOLO v5 models fails to detect the objects in the dataset. This further failed in masking the objects which led to failure in the counterfatual explanantiosn generation. 
 \end{itemize}
+
+From a minimality perspective, LIME on Latent (Median) produces the sparsest counterfactuals (average 2.3 features changed), but struggles with validity and coverage. In contrast, LIME on Image alters all patches (sparsity = 128), leading to poor reconstructions and less interpretable outcomes. Grid-Based and LIME on Latent NUN strike a favorable balance—offering low proximity and moderate sparsity with strong validity and broad coverage. This highlights that effective counterfactuals should not only change predictions but also introduce minimal, semantically meaningful changes that are interpretable and actionable.
+
 These results strongly support the adoption of latent-space counterfactual techniques particularly LIME on Latent feature based masking using NUN method for enhanced explainability in autonomous driving models.
 
 
@@ -762,16 +872,19 @@ These results strongly support the adoption of latent-space counterfactual techn
 
 
 
+\clearpage
 
-\section{Overview of the Evaluation Strategy} \label{sec:human_evluation}
+\section{Overview of the Human-centric Evaluation} \label{sec:human_evluation}
 
 While traditional quantitative metrics such as SSIM and PSNR offer insight into the visual quality of reconstructed counterfactual images, they do not fully reflect human judgment regarding interpretability, plausibility, or realism. As noted by Delaney et al.~\cite{DELANEY2023103995}, counterfactual explanations are meant to fulfill human explanation goals and must therefore be evaluated with human-centered metrics. This is especially crucial in high-stakes domains such as autonomous driving, where explanations must not only be technically valid but also intuitively understandable and semantically coherent from a user's perspective.
 
 To incorporate this human-centered evaluation, we developed a web-based application using FastAPI for backend processing and Jinja2 for rendering the frontend. The system was designed to present users with the original input image, its predicted label, and four corresponding counterfactual explanations—each generated using a different masking technique: Grid-Based Masking, LIME on Images, LIME on Latent Features, and LIME on Latent Features using the NUN method. To ensure fairness and avoid bias, the interface randomized the order of counterfactuals and concealed the identity of the underlying methods. Participants were only shown the prediction labels associated with each counterfactual image, not the technique used to generate it. A screenshot of the evaluation interface is provided in Appendix~\ref{app:web_interface}, Figure~\ref{fig:app:form_ui}.
 
+Here also the object detection based masking is ignored because the results obtained to generate counterfactual explanations using this masking method are very less. Due this there were no much sufficient examples images to showcase to user for evaluating.
+
 Each user was asked to evaluate the counterfactual explanations based on three criteria: Interpretability (how clearly the image highlights the minimal change required to alter the model’s prediction), Plausibility (how realistic and contextually appropriate the modified image appears), and Visual Coherence (whether the transformation affects only necessary regions while preserving the rest of the scene). These aspects were rated on a Likert scale of 1 (poor) to 5 (excellent). Users also had the option to provide qualitative comments to elaborate on their assessments.
 
-The system randomized the order of counterfactual images and concealed the identities of the masking methods, labeling each explanation only with its class prediction to reduce bias. The selected samples were those for which all four methods successfully generated counterfactuals—see Section~\ref{subsubsec:masking_method_overlap} for selection criteria.
+The system randomized the order of counterfactual images and concealed the identities of the masking methods, labeling each explanation only with its class prediction to reduce bias. The selected samples were those for which all four methods successfully generated counterfactual explanations example images (see Section~\ref{subsubsec:masking_method_overlap} for selection criteria).
 
 
 
@@ -779,7 +892,7 @@ The system randomized the order of counterfactual images and concealed the ident
 To address RQ4 (Which counterfactual explanation method is preferred by users when selecting among generated explanations of the same original image, and what factors influence user preference?) we conducted an in-depth analysis of the collected human ratings. The anonymized evaluation labels were internally mapped to the respective methods Counterfactual\_1 corresponds to Grid-Based Masking, Counterfactual\_2 to LIME on Image Masking, Counterfactual\_3 to LIME on Latent Features, and Counterfactual\_4 to LIME on Latent Features using the NUN method.
 
 
-The results of the user study, visualized in Figure~\ref{fig:bar_plot_user_eval}, indicate that LIME on Latent Features using NUN (Method 4) consistently achieved the highest average ratings across all three evaluation criteria. Grid-Based Masking (Method 1) emerged as the second-most preferred technique, also scoring well on all aspects. In contrast, LIME on Image Masking (Method 2) received the lowest ratings, with participants frequently citing issues like over-masking, loss of visual detail, and unrealistic reconstructions. LIME on Latent Features without NUN (Method 3) performed moderately, offering acceptable quality but lacking the precision of NUN-based selection.
+The results of the user study, visualized in Figure~\ref{fig:bar_plot_user_eval}, indicate that LIME on Latent Features using NUN (Method 4) consistently achieved the highest average ratings across all three evaluation criteria. Grid-Based Masking (Method 1) emerged as the second-most preferred technique, also scoring well on all aspects. In contrast, LIME on Image Masking (Method 2) received the lowest ratings, with participants frequently citing issues like over-altered, loss of visual detail, and unrealistic reconstructions. LIME on Latent Features without NUN (Method 3) performed moderately, offering acceptable quality but lacking the precision of NUN-based selection.
 
 \begin{figure}[htbp]
     \centering
@@ -834,6 +947,6 @@ Figures~\ref{fig:cf_interpretability}--\ref{fig:cf_visualcoherence} present a br
 \subsection{Qualitative Feedback and Discussion}
 Participant comments provided additional depth to the numerical ratings. Explanations generated via LIME on Latent NUN were frequently described as “realistic,” “semantically consistent,” and “preserving important details.” Users appreciated the minimal yet impactful changes these counterfactual explanations found, allowing for intuitive understanding of model decisions. Grid-Based Masking was praised for producing “clean,” “structured,” and “easily interpretable” edits. On the other hand, LIME based masking on Latent Features received mixed feedback, while some edits were described as “acceptable,” others were criticized for being blurry or poorly localized. Most negative feedback was associated with LIME on Image Masking, where participants described counterfactual explanations found images as “dark,” “unrecognizable,” or “lacking detail,” highlighting a significant gap in visual realism.
 
-These results underscore the importance of human-centric validation in explainable AI systems. While algorithmic evaluations such as counterfactual explanation coverage (interpreted as validity in our work), SSIM, and PSNR provide essential performance benchmarks, they often fail to capture the nuances of human perception. In real-world deployments particularly in safety-critical domains like autonomous driving interpretability must align with human intuition to foster trust and acceptance. Our findings demonstrate that the LIME on Latent features masking using NUN method and Grid based masking method consistently outperforms other approaches across both quantitative metrics and user-based assessments, making it the most effective strategy for generating counterfactual explanations that are both technically sound and intuitively meaningful.
+These results underscore the importance of human-centric validation in explainable AI systems. While algorithmic evaluations such as counterfactual explanation coverage (interpreted as validity in this work), SSIM, and PSNR provide essential performance benchmarks, they often fail to capture the nuances of human perception. In real-world deployments particularly in safety-critical domains like autonomous driving interpretability must align with human intuition to foster trust and acceptance. The findings demonstrate that the LIME on Latent features masking using NUN method and Grid based masking method consistently outperforms other approaches across both quantitative metrics and user-based assessments, making it the most effective strategy for generating counterfactual explanations that are both technically sound and intuitively meaningful.
 
 By narrowing the gap between human expectations and algorithmic reasoning, such methods offer a promising path toward building more trustworthy AI systems. While this study represents a significant step in aligning model explanations with user understanding, further advancements are necessary to achieve deeper trust. Enhancing generative models, refining latent manipulations, and incorporating more expressive human feedback mechanisms could further bridge the trust gap, bringing us closer to AI systems that behave not only accurately but also transparently and collaboratively.

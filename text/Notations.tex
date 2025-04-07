@@ -1,4 +1,23 @@
-\nomenclature{$x$}{Input variable}
-\nomenclature{$z$}{Latent variable}
-\nomenclature{$\mu, \sigma$}{Mean and standard deviation of latent distribution}
+% List of Symbols
+\nomenclature{$x$}{Input image (RGB)}
+\nomenclature{$z \in \mathbb{R}^{128}$}{Latent vector of dimensionality 128}
+\nomenclature{$\mu$}{Mean vector of the latent distribution}
+\nomenclature{$\sigma$}{Standard deviation vector of the latent distribution}
+\nomenclature{$\epsilon \sim \mathcal{N}(0, I)$}{Sample from standard normal distribution used in reparameterization}
+\nomenclature{$\hat{z}$}{Latent vector of the Nearest Unlike Neighbor (NUN)}
+\nomenclature{$\bar{z}$}{Median vector of latent features (computed across dataset)}
 \nomenclature{$\mathcal{L}_{\text{VAE}}$}{Total VAE loss}
+\nomenclature{$\mathcal{L}_{\text{recon}}$}{Reconstruction loss (MSE or Log-Cosh)}
+\nomenclature{$\mathcal{L}_{\text{KL}}$}{Kullback-Leibler divergence loss}
+\nomenclature{$\lambda_{\text{KL}}$}{KL divergence annealing weight}
+\nomenclature{$\log\cosh(x)$}{Log-Cosh loss function (robust to outliers)}
+\nomenclature{$\mathcal{F}$}{Set of influential features identified by LIME}
+\nomenclature{$C(z)$}{Classifier prediction given latent vector $z$}
+\nomenclature{$y, \hat{y}$}{Original and predicted class labels}
+\nomenclature{$E(\cdot)$}{Encoder function of the VAE}
+\nomenclature{$D(\cdot)$}{Decoder function of the VAE}
+\nomenclature{$\| \cdot \|_2$}{Euclidean norm used in distance computations}
+\nomenclature{$\mathcal{D}_{\text{test}}$}{Test dataset used for evaluation}
+
+
+

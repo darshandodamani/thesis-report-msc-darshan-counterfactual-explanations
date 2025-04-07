@@ -1,2 +1,28 @@
 % symbols.tex
 
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{ll}
+$ \mathbf{I} $ & Original input image \\
+$ \mathbf{I}_{\text{masked}} $ & Masked image after applying a masking method \\
+$ \mathbf{I}_{\text{recon}} $ & Reconstructed image from the decoder \\
+$ \mathbf{z} $ & Latent vector obtained from the encoder \\
+$ \mathbf{z}_{\text{masked}} $ & Modified latent vector after feature replacement or masking \\
+$ \mathbf{z}_{\text{re}} $ & Latent vector re-encoded from reconstructed image \\
+$ \bar{z}_i $ & Median value of the $i$-th latent dimension from the dataset \\
+$ C $ & Classifier trained on latent features \\
+$ \hat{y}_{\text{orig}} $ & Original predicted class \\
+$ \hat{y}_{\text{new}} $ & New predicted class after masking \\
+$ D $ & Decoder of the VAE \\
+$ E $ & Encoder of the VAE \\
+$ \mathcal{D}_{\text{test}} $ & Test dataset \\
+SSIM & Structural Similarity Index between original and reconstructed image \\
+PSNR & Peak Signal-to-Noise Ratio \\
+MSE & Mean Squared Error \\
+UQI & Universal Quality Index \\
+VIFP & Visual Information Fidelity in Pixel Domain \\
+Validity & Percentage of successful counterfactual flips \\
+Sparsity & Number of features modified to achieve class change \\
+Proximity & Distance between original and counterfactual in latent space \\
+\end{tabular}
+\end{center}
