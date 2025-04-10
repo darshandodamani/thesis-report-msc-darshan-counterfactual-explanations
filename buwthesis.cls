@@ -284,6 +284,10 @@
 {\includegraphics[width=6cm]{img/logo_uni}};
 
   \end{titlepage}
+    \clearpage
+    \thispagestyle{empty}
+    \null
+    \clearpage
 }%
 
 % Declaration of independent work
@@ -309,6 +313,10 @@
 
     \vspace*{\fill}
   \end{titlepage}
+    \clearpage
+    \thispagestyle{empty}
+    \null
+    \clearpage
 }
 
 \newenvironment{frontmatter}{%
@@ -353,16 +361,12 @@
 % {\end{tabbing}\vspace{1em}}
 
 \newenvironment{symbols}
-{
-    \chapter*{Summary of Notation}
-    \noindent\begin{tabbing}
-{
-    \end{tabbing}
-    \vspace{1em}
+{%
+  \chapter*{Summary of Notation}
+  \noindent\begin{tabbing}
+  \hspace*{2cm}\=\hspace{8cm}\= \kill
+}%
+{%
+  \end{tabbing}
+  \vspace{1em}
 }
-
-}
-
-
-
-

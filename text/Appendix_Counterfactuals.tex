@@ -1,0 +1,82 @@
+\subsection*{Examples of Counterfactuals Across Different Masking Methods}
+
+\begin{table}[htbp]
+\centering
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabular}{c|ccc}
+\textbf{Input Image} 
+& \textbf{Grid-Based Masking} 
+& \textbf{Object Detection Masking} 
+& \textbf{LIME on Image Masking} \\
+% ---------- Row 1 ----------
+\includegraphics[width=0.18\textwidth]{img/appendix/original_town7_000980.png}
+& \includegraphics[width=0.18\textwidth]{img/appendix/grid_masked_town7_000980.png}
+& \includegraphics[width=0.18\textwidth]{img/appendix/object_masked_town7_000980.png}
+& \includegraphics[width=0.18\textwidth]{img/appendix/LIME_on_Image_maksed_town7_000980.png} \\
+\textcolor{red}{STOP}
+& \includegraphics[width=0.18\textwidth]{img/appendix/grid_reconstructed_town7_000980.png}
+& \includegraphics[width=0.18\textwidth]{img/appendix/object_reconstructed_town7_000980.png}
+& \includegraphics[width=0.18\textwidth]{img/appendix/LIME_on_Image_reconstructed_town7_000980.png} \\
+
+& \textcolor{green}{GO}
+& \textcolor{green}{GO}
+& \textcolor{blue}{RIGHT} \\
+
+% ---------- Row Separator ----------
+\midrule
+\vspace{0.3em}
+
+% ---------- Row 2 ----------
+\includegraphics[width=0.18\textwidth]{img/appendix/original_town7_000919.png}
+& \includegraphics[width=0.18\textwidth]{img/appendix/grid_masked_town7_000919.png}
+& \textemdash
+& \includegraphics[width=0.18\textwidth]{img/appendix/LIME_on_Image_maksed_town7_000919.png} \\
+\textcolor{green}{GO}
+& \includegraphics[width=0.18\textwidth]{img/appendix/grid_reconstructed_town7_000919.png}
+& \textemdash
+& \includegraphics[width=0.18\textwidth]{img/appendix/LIME_on_Image_reconstructed_town7_000919.png} \\
+
+& \textcolor{blue}{RIGHT}
+& \textcolor{red}{--}
+& \textcolor{red}{STOP} \\
+
+% ---------- Row Separator ----------
+\midrule
+\vspace{0.3em}
+
+% ---------- Row 3 ----------
+\includegraphics[width=0.18\textwidth]{img/appendix/original_town7_010910.png}
+& \includegraphics[width=0.18\textwidth]{img/appendix/grid_masked_town7_010910.png}
+& \textemdash
+& \includegraphics[width=0.18\textwidth]{img/appendix/LIME_on_Image_maksed_town7_010910.png} \\
+\textcolor{green}{GO}
+& \includegraphics[width=0.18\textwidth]{img/appendix/grid_reconstructed_town7_010910.png}
+& \textemdash
+& \includegraphics[width=0.18\textwidth]{img/appendix/LIME_on_Image_reconstructed_town7_010910.png} \\
+
+& \textcolor{teal}{LEFT}
+& \textcolor{red}{--}
+& \textcolor{red}{STOP} \\
+
+% ---------- Row Separator ----------
+\midrule
+\vspace{0.3em}
+
+% ---------- Row 3 ----------
+\includegraphics[width=0.18\textwidth]{img/appendix/original_town7_010910.png}
+& \includegraphics[width=0.18\textwidth]{img/appendix/grid_masked_town7_010910.png}
+& \textemdash
+& \includegraphics[width=0.18\textwidth]{img/appendix/LIME_on_Image_maksed_town7_010910.png} \\
+\textcolor{green}{GO}
+& \includegraphics[width=0.18\textwidth]{img/appendix/grid_reconstructed_town7_010910.png}
+& \textemdash
+& \includegraphics[width=0.18\textwidth]{img/appendix/LIME_on_Image_reconstructed_town7_010910.png} \\
+
+& \textcolor{teal}{LEFT}
+& \textcolor{red}{--}
+& \textcolor{red}{STOP} \\
+
+
+\end{tabular}
+\end{table}

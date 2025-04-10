@@ -1,70 +1,101 @@
 \begin{frontmatter}
-    \begin{abstract}
-   Deep generative models, such as Variational Autoencoders (VAEs), are widely used in autonomous driving for learning compact latent representations of visual data. However, like other deep neural networks, VAEs and associated classifiers are often treated as black-box models, making it difficult to understand the reasoning behind their predictions. This lack of transparency raises concerns about trust and reliability, particularly in safety-critical applications such as autonomous vehicle decision-making.
-
-    One promising approach to improving model interpretability is through counterfactual explanations (CEs), which identify the minimal changes required to alter a model’s output. Counterfactuals provide human-interpretable insights by highlighting influential features, offering a compelling alternative to traditional attribution methods. In this thesis, I propose a novel counterfactual explanation framework that leverages a deep generative model (VAE) in combination with various feature masking strategies to generate CEs for black-box classifiers. The framework modifies either input images or their latent representations to uncover what meaningful perturbations can flip a classifier's decision.
-    
-    To evaluate this approach, experiments are conducted using simulated driving data from the CARLA environment, covering both binary and multi-class decisions such as STOP, GO, LEFT, and RIGHT. The generated counterfactuals are assessed using quantitative metrics and visual inspection to evaluate plausibility, visual realism, and interpretability. Additionally, a human evaluation study was conducted through a web-based interface to measure user trust in the generated explanations. Results indicate that latent-space interventions—particularly those guided by LIME with nearest-neighbor support—as well as grid-based image masking, were consistently rated as the most trustworthy and informative by participants. This work contributes to the broader field of explainable AI by advancing interpretable model analysis for decision-making in autonomous systems.
-
-    \textbf{Keywords:}
-    Counterfactual Explanations, Explainable AI, Variational Autoencoders, Latent Space Manipulation, LIME, Human-Centered Evaluation, Trust in AI, Autonomous Driving, Black-box Classifier, Visual Interpretability
-    \end{abstract}
-
-       
-    % ------------------------------------------
-    % Acknowledgements
-    % ------------------------------------------
-    % \cleardoublepage
-    \chapter*{Acknowledgement}
-    \addcontentsline{toc}{chapter}{Acknowledgements}
-    I would like to express my deepest gratitude to my supervisors, Prof.\ Dr.\ Jan Oliver Ringert and Prof.\ Dr.\ Volker Rodehorst, for their invaluable guidance and support throughout this research. I am also thankful to my family and friends for their continuous encouragement.
-    
-    \tableofcontents
-    \listoffigures
-    \listoftables
-    
-    
-    
+% frontpage and declaration are automatically handled here by the class
 \end{frontmatter}
+\cleardoublepage
 
 % ------------------------------------------
-% List of Symbols (Nomenclature)
+% Switch to Roman numbering
 % ------------------------------------------
-% \cleardoublepage
-% \chapter*{List of Symbols}
-% \addcontentsline{toc}{chapter}{List of Symbols}
-% \input{text/Notations.tex}
+\pagenumbering{roman}
 
+% ------------------------------------------
+% Abstract
+% ------------------------------------------
+\cleardoublepage
+\begin{abstract}
+Deep generative models, such as Variational Autoencoders (VAEs), are widely used in autonomous driving for learning compact latent representations of visual data. However, like other deep neural networks, VAEs and associated classifiers are often treated as black-box models, making it difficult to understand the reasoning behind their predictions. This lack of transparency raises concerns about trust and reliability, particularly in safety-critical applications such as autonomous vehicle decision-making.
+
+One promising approach to improving model interpretability is through counterfactual explanations (CEs), which identify the minimal changes required to alter a model’s output. Counterfactuals provide human-interpretable insights by highlighting influential features, offering a compelling alternative to traditional attribution methods. In this thesis, I propose a novel counterfactual explanation framework that leverages a deep generative model (VAE) in combination with various feature masking strategies to generate CEs for black-box classifiers. The framework modifies either input images or their latent representations to uncover what meaningful perturbations can flip a classifier's decision.
+
+To evaluate this approach, experiments are conducted using simulated driving data from the CARLA environment, covering both binary and multi-class decisions such as STOP, GO, LEFT, and RIGHT. The generated counterfactuals are assessed using quantitative metrics and visual inspection to evaluate plausibility, visual realism, and interpretability. Additionally, a human evaluation study was conducted through a web-based interface to measure user trust in the generated explanations. Results indicate that latent-space interventions—particularly those guided by LIME with nearest-neighbor support—as well as grid-based image masking, were consistently rated as the most trustworthy and informative by participants. This work contributes to the broader field of explainable AI by advancing interpretable model analysis for decision-making in autonomous systems.
+
+\textbf{Keywords:}
+Counterfactual Explanations, Explainable AI, Variational Autoencoders, Latent Space Manipulation, LIME, Human-Centered Evaluation, Masking, Trust in AI, Autonomous Driving, Black-box Classifier, Visual Interpretability
+\end{abstract}
+
+\clearpage
+\thispagestyle{empty}
+\null
+\clearpage
+
+% ------------------------------------------
+% Acknowledgements
+% ------------------------------------------
+\chapter*{Acknowledgement}
+\addcontentsline{toc}{chapter}{Acknowledgement}
+I would like to express my deepest gratitude to my supervisors, Prof.\ Dr.\ Jan Oliver Ringert and Prof.\ Dr.\ Volker Rodehorst, for their invaluable guidance and support throughout this research. I am also thankful to my family and friends for their continuous encouragement.
+\clearpage
+\thispagestyle{empty}
+\null
+\clearpage
+
+% ------------------------------------------
+% TOC, Figures, Tables
+% ------------------------------------------
+\tableofcontents
+\cleardoublepage
+
+\listoffigures
+\cleardoublepage
+
+\listoftables
+\cleardoublepage
 
 % ------------------------------------------
 % Abbreviations
 % ------------------------------------------
-% \cleardoublepage
 \chapter*{Abbreviations}
 \addcontentsline{toc}{chapter}{Abbreviations}
 \input{text/Abbreviations.tex}
+\cleardoublepage
 
+% ------------------------------------------
+% Nomenclature
+% ------------------------------------------
 \input{text/Notations.tex}
+\addcontentsline{toc}{chapter}{Nomenclature}
 \printnomenclature
+\cleardoublepage
+
+% ------------------------------------------
+% Switch to Arabic numbering
+% ------------------------------------------
+\pagenumbering{arabic}
 
 % ------------------------------------------
 % Main Chapters
 % ------------------------------------------
+\cleardoublepage
 \chapter{Introduction} \label{Introduction}
 \input{text/Introduction.tex}
 
+\cleardoublepage
 \chapter{Background} \label{Background}
 \input{text/Background.tex}
 
+\cleardoublepage
 \chapter{Methodology} \label{Methodology}
 \input{text/Methodology.tex}
 
+\cleardoublepage
 \chapter{Evaluation and Results} \label{Evaluation and Results}
 \input{text/Evaluation and Results.tex}
 
+\cleardoublepage
 \chapter{Related Work} \label{Related work}
 \input{text/Related work.tex}
 
+\cleardoublepage
 \chapter{Conclusion and Future Scope} \label{Conclusion and Future Scope}
 \input{text/Conclusion and Future Scope.tex}
 
@@ -74,21 +105,24 @@
 \cleardoublepage
 \printbibliography[heading=bibintoc]
 
-% Fix header style before appendix
+% ------------------------------------------
+% Appendix
+% ------------------------------------------
 \cleardoublepage
-\pagestyle{headings}  % or plain
 \appendix
+\chapter{Classifier Metrics}
+\label{appendix:classifier}
+\input{text/Appendix_Metrics.tex}
 
+\chapter{User Study Web Interface}
+\label{appendix:webinterface}
+\input{text/Appendix_WebInterface.tex}
 
-% Suppress "Appendix A" and show only "Appendix"
-\renewcommand{\thechapter}{}        % Remove A from the title
-\chapter*{Appendix}
-\addcontentsline{toc}{chapter}{Appendix}
+\chapter{Dataset Diversity Samples}
+\label{appendix:diversity}
+\input{text/Appendix_Diversity.tex}
 
-% But restore A for figures
-\renewcommand{\thechapter}{A}
-\setcounter{chapter}{1}  % Needed to properly increment figures as A.1
-\setcounter{section}{0}
-\setcounter{figure}{0}
+\chapter{Visual Comparison of Successful and Failed Counterfactuals}
+\label{appendix:comparison}
+\input{text/Appendix_Counterfactuals.tex}
 
-\input{text/Appendix.tex}

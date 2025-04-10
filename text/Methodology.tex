@@ -4,12 +4,14 @@ To induce counterfactual changes, a range of masking techniques are applied eith
 
 The design and implementation of this framework are structured around four central research questions (RQs), initially introduced in Chapter~\ref{Introduction} and now revisited with a focus on their technical realization. Each RQ targets a distinct component of the system from representation learning and loss function optimization to comparative evaluation of explanation strategies. The implementation strategies are detailed in the sections that follow, with relevant modules cross-referenced (e.g., \cref{sec:vae}, \cref{sec:classifier_architectures}, and \cref{sec:feature_masking_pipeline}) to guide the reader through the complete example-based explainability pipeline.
 
-
+\vspace{1em}
 
 \textbf{RQ1: VAE and Classifier Implementation} \\
 \textit{How can deep generative models be implemented to effectively encode and reconstruct images of high-dimensional driving scenes for interpretable and compact representation learning in autonomous driving systems?}
 
 To address this research question, the following implementation strategy was adopted.
+
+\vspace{-1em}
 
 \paragraph{Implementation:} A Variational Autoencoder (VAE) is implemented to learn compact and interpretable representations from RGB images of simulated driving environments. The architecture comprises a deep convolutional encoder-decoder framework, optimized using reconstruction and regularization objectives. Key design considerations include latent space dimensionality selection, KL divergence annealing for stable training, and comparison of reconstruction losses (Mean Squared Error vs. Log-Cosh). The model is trained on both binary and multi-class labeled datasets to ensure generalization. The detailed implementation is carried out in the \cref{sec:vae}.
 
@@ -54,7 +56,7 @@ The full methodology for each masking technique is detailed in \cref{sec:feature
     \item \textbf{Visual Coherence:} Is the reconstruction smooth, artifact-free, and consistent with the original image?
 \end{itemize}
 
-Details of the user study design and AI evaluation pipeline are presented in the \cref{app:web_interface}, and comparative results are discussed in \cref{sec:human_evluation}.
+Details of the user study design and AI evaluation pipeline along with comparative results are discussed in \cref{sec:human_evluation}.
 
 \section{Experimental Setup}
 
@@ -376,7 +378,7 @@ Furthermore, the masking techniques used in this work are broadly divided into t
 \subsection*{Image Space Masking}
 This includes Grid-Based Masking, LIME on Images, and Object Detection-Based Masking. These methods apply masking directly to the input image.
 \begin{itemize}
-    \item \textbf{Grid-Based Masking:} The image is divided into grids (e.g., 10$\times$5, 4$\times$2), and each cell is masked iteratively to observe prediction changes.
+    \item \textbf{Grid-Based Masking:} The image is divided into grids (e.g., 8$\times$16, 4$\times$8), and each cell is masked iteratively to observe prediction changes.
     \item \textbf{LIME on Images:} LIME is applied on pixel space to identify important regions, which are then masked.
     \item \textbf{Object Detection-Based Masking:} YOLOv5 is used to detect semantic objects (e.g., pedestrians, vehicles), which are then removed from the image by zeroing out pixels in the bounding box.
 \end{itemize}
@@ -576,7 +578,7 @@ To probe the causal influence of the STOP sign, the region corresponding to the 
 
 Upon re-encoding and classifying the reconstructed image, the model changes its decision from \texttt{STOP} to \texttt{GO}. This prediction flip signifies a valid counterfactual explanation. The STOP sign was a critical feature in the model’s decision process. Its removal induced a behavioral shift, indicating a direct causal pathway between the visual presence of the STOP sign and the predicted driving action.
 
-This example validates the semantic sensitivity of the proposed method. It reveals that object detection-based masking can expose model dependencies on interpretable, high-level visual cues, facilitating transparency in AI-driven navigation systems. The corresponding results on this method and comparing the effectiveness to other methods are detailed in \cref{Evaluation and Results}.
+This example validates the semantic sensitivity of the proposed method. It reveals that object detection-based masking can expose model dependencies on interpretable, high-level visual cues, facilitating transparency in AI-driven navigation systems. The corresponding results on this method and comparing the effectiveness to other methods are detailed in \cref{sec:masking_eval}.
 
 
 
@@ -641,7 +643,7 @@ Although LIME operates in the image space, the explanation it provides is ultima
 \end{algorithmic}
 \end{algorithm}
 
-Compared to grid-based or object detection-based masking, LIME provides an \emph{adaptive and data-driven} approach to region selection. It focuses only on the most relevant image regions for a given prediction, enhancing interpretability and explanation quality. The corresponding results on this method and comparing the effectiveness to other methods are detailed in \cref{Evaluation and Results}.
+Compared to grid-based or object detection-based masking, LIME provides an \emph{adaptive and data-driven} approach to region selection. It focuses only on the most relevant image regions for a given prediction, enhancing interpretability and explanation quality. The corresponding results on this method and comparing the effectiveness to other methods are detailed in \cref{sec:masking_eval}.
 
 
 
@@ -789,7 +791,7 @@ Following the LIME importance order, each dimension is replaced via \( z[i_k] \l
     \centering
     \includegraphics[width=0.55\textwidth]{img/masking/lime_on_latent_nun/NUN_method.drawio.png}
     \caption{Illustration of the proposed method. Important latent features (as determined by LIME) are transferred from the NUN to the input in order of decreasing importance until the classifier's prediction changes.}
-    \label{fig:nun_lime}
+    \label{fig:nun_lime_workflow}
 \end{figure}
 
 
@@ -802,7 +804,7 @@ Following the LIME importance order, each dimension is replaced via \( z[i_k] \l
     Step 2: A latent vector from the test set with a different class prediction (NUN) is selected based on Euclidean proximity. LIME is applied to the NUN to rank the most influential latent features contributing to its class. These top-k features are iteratively transferred from the NUN to the query latent vector.  
     Step 3: After each replacement, the latent vector is decoded to an image, re-encoded, and re-classified. If the prediction changes (e.g., to \texttt{GO}), the replaced features are considered causally decisive, and the outcome is recorded as a counterfactual explanation.
     }
-    \label{fig:nun_lime}
+    \label{fig:nun_lime_workflow}
 \end{figure}
 
 

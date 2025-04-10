@@ -1,0 +1,103 @@
+
+\paragraph{Accuracy}
+$$
+\text{Accuracy} = \frac{\text{Total Correct Predictions}}{\text{Total Predictions}}
+$$
+
+\paragraph{F1-Score}
+$$
+\text{F1-score} = \frac{2 \times \text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}
+$$
+
+\paragraph{Precision}
+$$
+\text{Precision} = \frac{\text{True Positives}}{\text{True Positives} + \text{False Positives}}
+$$
+
+\paragraph{Recall}
+$$
+\text{Recall} = \frac{\text{True Positives}}{\text{True Positives} + \text{False Negatives}}
+$$
+
+\begin{table}[h]
+\centering
+\caption{Classification Report for Logistic Regression}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Support} \\
+\hline
+STOP  & 0.88 & 0.90 & 0.89 & 821 \\
+GO    & 0.68 & 0.70 & 0.69 & 821 \\
+RIGHT & 0.79 & 0.78 & 0.79 & 821 \\
+LEFT  & 0.85 & 0.81 & 0.82 & 821 \\
+\hline
+\textbf{Accuracy} & \multicolumn{4}{c}{0.80} \\
+\textbf{Macro Avg} & 0.80 & 0.80 & 0.80 & 3284 \\
+\textbf{Weighted Avg} & 0.80 & 0.80 & 0.80 & 3284 \\
+\hline
+\end{tabular}
+\label{tab:classification_report}
+\end{table}
+
+
+\begin{table}[h]
+\centering
+\caption{Classification Report for KNN}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Support} \\
+\hline
+STOP  & 0.92 & 0.99 & 0.95 & 821 \\
+GO    & 0.78 & 0.82 & 0.80 & 821 \\
+RIGHT & 0.93 & 0.84 & 0.88 & 821 \\
+LEFT  & 0.91 & 0.87 & 0.89 & 821 \\
+\hline
+\textbf{Accuracy} & \multicolumn{4}{c}{0.88} \\
+\textbf{Macro Avg} & 0.88 & 0.88 & 0.88 & 3284 \\
+\textbf{Weighted Avg} & 0.88 & 0.88 & 0.88 & 3284 \\
+\hline
+\end{tabular}
+\label{tab:knn_classification_report}
+\end{table}
+
+
+\begin{table}[h]
+\centering
+\caption{Classification Report for Random Forest}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Support} \\
+\hline
+STOP  & 0.93 & 0.98 & 0.95 & 821 \\
+GO    & 0.76 & 0.87 & 0.81 & 821 \\
+RIGHT & 0.95 & 0.85 & 0.89 & 821 \\
+LEFT  & 0.92 & 0.84 & 0.88 & 821 \\
+\hline
+\textbf{Accuracy} & \multicolumn{4}{c}{0.88 (3284 samples)} \\
+\textbf{Macro Avg} & 0.89 & 0.88 & 0.88 & 3284 \\
+\textbf{Weighted Avg} & 0.89 & 0.88 & 0.88 & 3284 \\
+\hline
+\end{tabular}
+\label{tab:random_forest_classification_report}
+\end{table}
+
+
+\begin{table}[h]
+\centering
+\caption{Classification Report for SVM}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Support} \\
+\hline
+STOP  & 0.90 & 0.96 & 0.93 & 821 \\
+GO    & 0.79 & 0.82 & 0.81 & 821 \\
+RIGHT & 0.92 & 0.88 & 0.90 & 821 \\
+LEFT  & 0.95 & 0.89 & 0.92 & 821 \\
+\hline
+\textbf{Accuracy} & \multicolumn{4}{c}{0.89 (3284 samples)} \\
+\textbf{Macro Avg} & 0.89 & 0.89 & 0.89 & 3284 \\
+\textbf{Weighted Avg} & 0.89 & 0.89 & 0.89 & 3284 \\
+\hline
+\end{tabular}
+\label{tab:svm_classification_report}
+\end{table}

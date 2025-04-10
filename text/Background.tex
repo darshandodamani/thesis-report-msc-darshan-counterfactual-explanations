@@ -3,7 +3,7 @@ This section introduces notations and provides background on counterfactual expl
 \section{Counterfactual Explanations}
 In machine learning, decisions are often made by complex models without explicit explanations. For instance, imagine an autonomous vehicle approaching an intersection, relying on its vision system to classify traffic signs. If the vehicle recognizes a STOP sign, it will halt; however, if it misclassifies the same sign as a Speed Limit sign, this might lead to undesired consequences. Understanding precisely what minimal changes to the input would alter the model's decision is critical. This concept is precisely captured by \textit{counterfactual explanations}.
 
-Formally, following Molnar~\cite{molnar2025}, a counterfactual explanation identifies the smallest possible modification to an input instance resulting in a different prediction outcome. Given a black-box classifier \( b \) that predicts an outcome \( y \) for an input instance \( x \):
+Formally, following Molnar~\cite{molnar2024}, a counterfactual explanation identifies the smallest possible modification to an input instance resulting in a different prediction outcome. Given a black-box classifier \( b \) that predicts an outcome \( y \) for an input instance \( x \):
 
 \begin{equation}
 y = b(x),
@@ -194,13 +194,19 @@ The training objective of VAEs, derived from variational inference, maximizes th
 The first term is the reconstruction likelihood, encouraging accurate data reconstruction, while the second term ensures the approximate distribution  closely resembles the prior . Typically, a unit Gaussian  serves as the latent prior.
 
 \subsection{Reparameterization Trick} \label{subsec:reparameterization_trick}
-Training VAEs involves optimizing stochastic processes that require backpropagation, making direct sampling problematic. The "reparameterization trick" addresses this by decoupling randomness from network parameters. Instead of sampling directly from , we sample from a unit Gaussian and transform this random variable by the latent distribution's mean and variance:
+Training VAEs involves optimizing stochastic processes that require backpropagation, making direct sampling problematic. The "reparameterization trick" addresses this by decoupling randomness from network parameters. Instead of sampling directly from the learned latent distribution \( z \sim \mathcal{N}(\mu(x), \sigma^2(x)) \), we sample from a standard normal distribution and transform it using the mean and standard deviation produced by the encoder network:
 \begin{equation}
 z = \mu(x) + \sigma(x) \odot \epsilon, \quad \text{where } \epsilon \sim \mathcal{N}(0, I).
 \end{equation}
-This transformation ensures that gradients can flow through the latent variables, allowing efficient optimization using gradient-based learning.
+This reparameterization allows gradients to propagate through the sampling process, enabling efficient end-to-end optimization via backpropagation.
 
-As illustrated in Figure \ref{fig:reparameterization_trick}, the reparameterization trick decomposes the sampling process into deterministic and stochastic components. The encoder first predicts the mean  and standard deviation  of the latent distribution, and then a sample  is obtained by adding a scaled noise variable , where . This allows the latent space to remain continuous and differentiable while preserving the stochastic nature of the VAE.
+
+As illustrated in Figure~\ref{fig:reparameterization_trick}, the reparameterization trick decomposes the sampling process into deterministic and stochastic components. The encoder network predicts the mean \( \mu(x) \) and standard deviation \( \sigma(x) \) of the latent Gaussian distribution. A latent vector \( z \) is then obtained by sampling a noise vector \( \epsilon \sim \mathcal{N}(0, I) \) and applying the transformation:
+\[
+z = \mu(x) + \sigma(x) \odot \epsilon.
+\]
+This formulation preserves the stochastic nature of the latent space while allowing the sampling operation to remain differentiable, enabling gradient-based optimization through backpropagation.
+
 
 Furthermore, Figure \ref{fig:reparameterization_backprop} demonstrates how the reparameterization trick enables backpropagation through stochastic nodes. Since the sampling operation is reformulated as a differentiable function of the noise variable , gradients can flow backward through  and , allowing efficient learning of the latent distribution parameters. This ensures that the encoder network effectively learns a structured latent space while maintaining a probabilistic formulation.
 
