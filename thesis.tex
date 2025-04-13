@@ -1,5 +1,7 @@
 % \documentclass[german,bachelor]{vrsysthesis}
 \documentclass[english,master]{buwthesis}
+\KOMAoptions{open=right}
+
 
 
 \ThesisSetTitle{A Counterfactual Explanation Approach Using Deep Generative Models}
@@ -91,6 +93,9 @@
 \usetikzlibrary{shapes,arrows}
 \usepackage{nomencl}
 \makenomenclature
+% Improve spacing and alignment of nomenclature entries
+\setlength{\nomlabelwidth}{3cm} % adjust width of symbol column
+\renewcommand{\nomlabel}[1]{\hspace*{\fill}#1 \hfill}
 \usepackage{rotating}
 
 
@@ -112,6 +117,13 @@
 \usepackage{cleveref} % must be loaded after hyperref
 \crefformat{hypothesis}{\textbf{H\textsubscript{#1}}}
 \crefformat{shypothesis}{\textbf{\textit{H\textsubscript{#1}}}}
+
+\usepackage{nameref} % Enables \nameref for referencing titles
+\newcommand{\appref}[1]{Appendix: \nameref{#1}}
+
+\usepackage{makecell}
+
+
 
 
 \begin{document}

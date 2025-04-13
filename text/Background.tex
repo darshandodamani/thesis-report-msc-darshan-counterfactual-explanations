@@ -154,10 +154,10 @@ The ELBO consists of two terms: a reconstruction term, which ensures that the de
 Figure \ref{fig:vae_structure} provides a schematic representation of the VAE architecture. A VAE comprises three main components:
 
 \begin{figure}[htbp]
-\centering
-\includegraphics[width=0.7\textwidth]{img/vae/vae-gaussian.png}
-\caption{Architecture of a Variational Autoencoder (VAE). The encoder maps inputs to a latent distribution; the decoder reconstructs data from samples drawn from this distribution~\cite{weng2018VAE}.}
-\label{fig:vae_structure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/vae/vae-gaussian.png}
+    \caption[Architecture of a Variational Autoencoder (VAE)]{Architecture of a Variational Autoencoder (VAE). The encoder maps inputs to a latent distribution; the decoder reconstructs data from samples drawn from this distribution~\cite{weng2018VAE}.}
+    \label{fig:vae_structure}
 \end{figure}
 
 \subsubsection{Encoder}
@@ -168,7 +168,7 @@ q(z|x) = \mathcal{N}(z; \mu(x), \Sigma(x)), \quad \text{where } \Sigma(x) = \tex
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.7\textwidth]{img/vae/Image To Encoder To Latent Variable Parameters.png}
-    \caption{Encoder network ($\phi$) mapping input $x$ to latent space parameters $(\mu_i, \sigma_i^2)$ for each latent dimension $z_i$. The encoder learns the approximate posterior distribution $q(z|x) = \mathcal{N}(z; \mu(x), \Sigma(x))$.}
+    \caption[Encoder network mapping input to latent parameters]{Encoder network ($\phi$) mapping input $x$ to latent space parameters $(\mu_i, \sigma_i^2)$ for each latent dimension $z_i$. The encoder learns the approximate posterior distribution $q(z|x) = \mathcal{N}(z; \mu(x), \Sigma(x))$.}
     \label{fig:encoder}
 \end{figure}
 
@@ -180,7 +180,7 @@ The decoder reconstructs input data  from latent variables . It is designed prob
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.7\textwidth]{img/vae/decoder_figure.png}
-    \caption{Decoder network ($\theta$) mapping latent variables $z$ to reconstructed output $x'$. The decoder models the likelihood $p(x'|z) = \mathcal{N}(x'; \mu_\theta(z), \sigma_\theta^2(z))$.}
+    \caption[Decoder network reconstructing outputs from latent space]{Decoder network ($\theta$) mapping latent variables $z$ to reconstructed output $x'$. The decoder models the likelihood $p(x'|z) = \mathcal{N}(x'; \mu_\theta(z), \sigma_\theta^2(z))$.}
     \label{fig:decoder}
 \end{figure}
 
@@ -213,14 +213,14 @@ Furthermore, Figure \ref{fig:reparameterization_backprop} demonstrates how the r
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.6\textwidth]{img/vae/reparameterization_trick.png}
-    \caption{Visualization of the reparameterization trick: converting stochastic sampling into deterministic operations for effective backpropagation.Source Kingma and Weilling~\cite{Kingma_2019}}
+    \caption[Reparameterization trick visualization]{Visualization of the reparameterization trick: converting stochastic sampling into deterministic operations for effective backpropagation. Source: Kingma and Welling~\cite{Kingma_2019}.}
     \label{fig:reparameterization_trick}
 \end{figure}
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.7\textwidth]{img/vae/reparameterization_backprop.png}
-    \caption{Illustration of gradient flow (backpropagation) enabled by the reparameterization trick in VAEs. Source Kingma and Weilling~\cite{Kingma_2019}}
+    \caption[Backpropagation flow via reparameterization trick]{Illustration of gradient flow (backpropagation) enabled by the reparameterization trick in VAEs. Source: Kingma and Welling~\cite{Kingma_2019}.}
     \label{fig:reparameterization_backprop}
 \end{figure}
 

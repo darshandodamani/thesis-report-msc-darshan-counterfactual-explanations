@@ -7,15 +7,16 @@ The design and implementation of this framework are structured around four centr
 \vspace{1em}
 
 \textbf{RQ1: VAE and Classifier Implementation} \\
-\textit{How can deep generative models be implemented to effectively encode and reconstruct images of high-dimensional driving scenes for interpretable and compact representation learning in autonomous driving systems?}
+\textit{How can deep generative models be implemented to effectively encode and reconstruct high-dimensional RGB input images of driving scenes for compact and interpretable representation learning in autonomous driving systems?}
 
 To address this research question, the following implementation strategy was adopted.
 
 \vspace{-1em}
 
-\paragraph{Implementation:} A Variational Autoencoder (VAE) is implemented to learn compact and interpretable representations from RGB images of simulated driving environments. The architecture comprises a deep convolutional encoder-decoder framework, optimized using reconstruction and regularization objectives. Key design considerations include latent space dimensionality selection, KL divergence annealing for stable training, and comparison of reconstruction losses (Mean Squared Error vs. Log-Cosh). The model is trained on both binary and multi-class labeled datasets to ensure generalization. The detailed implementation is carried out in the \cref{sec:vae}.
+\paragraph{Implementation:} A Variational Autoencoder (VAE) is implemented to learn compact and semantically meaningful latent representations from high-dimensional RGB images (\(80 \times 160 \times 3\)) collected from a simulated driving environment. The VAE architecture consists of a deep convolutional encoder-decoder framework trained in an unsupervised manner, minimizing reconstruction loss while regularizing the latent space distribution. Key design considerations include latent dimensionality selection (e.g., 128-dim), KL divergence annealing for stable training, and comparative analysis of reconstruction loss functions (Mean Squared Error vs. Log-Cosh). Although the VAE is trained without using class labels (i.e., in an unsupervised manner), its learned latent representations are later used to train separate classifiers for both binary (e.g., STOP vs. GO) and multi-class (STOP, GO, LEFT, RIGHT) classification tasks. This setup allows us to indirectly assess the quality and semantic structure of the latent space through downstream performance on these classification problems.
 
-The architectural and training details of the VAE are elaborated in \cref{sec:vae}, while classifier models trained on the latent space are described in \cref{sec:classifier_architectures}. Evaluation results and visual analyses are discussed in \cref{sec:vae_evaluation} and \cref{sec:classifier_eval}.
+
+The architectural and training details of the VAE are elaborated in \cref{sec:vae}, while classifier models trained on the VAE’s latent space are described in \cref{sec:classifier_architectures}. Evaluation results, reconstruction metrics, and visual analyses are presented in \cref{sec:vae_evaluation} and \cref{sec:classifier_eval}.
 
 \vspace{1em}
 
@@ -56,7 +57,7 @@ The full methodology for each masking technique is detailed in \cref{sec:feature
     \item \textbf{Visual Coherence:} Is the reconstruction smooth, artifact-free, and consistent with the original image?
 \end{itemize}
 
-Details of the user study design and AI evaluation pipeline along with comparative results are discussed in \cref{sec:human_evluation}.
+Details of the user study design and AI evaluation pipeline along with comparative results are discussed in \cref{sec:human_evaluation}.
 
 \section{Experimental Setup}
 
@@ -81,12 +82,13 @@ To maintain compatibility with CARLA’s Python API, \textbf{Python version 3.7}
     \label{fig:carla_maps}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[h]
     \centering
-    \includegraphics[width=0.7\linewidth]{img/carla/CARLA_Environment.png}
-    \caption{3D Sample scenes from CARLA showcasing diverse conditions during dataset collection. The images illustrate a variety of urban and rural settings, with diverse lighting and weather conditions, including sunny, foggy, rainy, and snowy scenarios. Each scene highlights the flexibility of CARLA in simulating realistic driving environments for autonomous vehicle testing.}
+    \includegraphics[width=0.9\linewidth]{img/carla/CARLA_Environment.png}
+    \caption[CARLA scenes under diverse conditions]{3D Sample scenes from CARLA showcasing diverse conditions. The images illustrate a variety of urban and rural settings, with diverse lighting and weather conditions, including sunny, foggy, rainy, and snowy scenarios. Each scene highlights the flexibility of CARLA in simulating realistic driving environments for autonomous vehicle testing.}
     \label{fig:carla_scenes}
 \end{figure}
+
 
 
 Before executing any client-side scripts for dataset collection, it is essential to start the CARLA server using the following command in the CARLA root directory: ./CarlaUE4.sh
@@ -108,22 +110,27 @@ The dataset was collected using the CARLA simulator~\cite{CARLA2024docs}. An Aud
 
 A total of approximately 12,000 images were collected under varied driving scenarios. Each image was paired with the vehicle’s control parameters steering, throttle, and brake. The \textit{steering angle} ranged from $-1$ (full left) to $1$ (full right), while \textit{throttle} and \textit{brake} values ranged from $0$ to $1$, representing the intensity of acceleration and braking, respectively. This multi-modal data captured both visual context and driving behavior. The resulting dataset served as the foundation for both binary (STOP vs. GO) and multi-class (STOP, GO, LEFT, RIGHT) classification tasks.
 
+The \textit{steering angle} ranged from $-1$ (full left) to $1$ (full right), while \textit{throttle} and \textit{brake} values ranged from $0$ to $1$, representing the intensity of acceleration and braking, respectively. Although the full steering range spans ±1, directional labels (LEFT, RIGHT, GO) were based on empirically selected thresholds of ±0.1 to distinguish meaningful turns from straight driving.
 
 \subsection{Dataset Labeling}
 
 The collected data was labeled using a deterministic rule-based strategy derived from the vehicle’s control inputs. Two distinct labeling schemes were implemented to support binary and multi-class classification objectives.
 
-For the \textbf{binary-class scheme}, each frame was labeled as either \texttt{STOP} or \texttt{GO}. A frame was labeled as \texttt{STOP} if the brake value exceeded a predefined threshold. Otherwise, it was labeled as \texttt{GO}. This distinction effectively captured the vehicle's motion state based on braking behavior.
+For the \textbf{binary-class scheme}, each frame was labeled as either \texttt{STOP} or \texttt{GO}. A frame was labeled as \texttt{STOP} if the brake value exceeded 0.5 and throttle was less than 0.2. Otherwise, it was labeled as \texttt{GO}. This distinction effectively captured the vehicle's motion state based on braking behavior.
 
 For the \textbf{multi-class scheme}, labels were assigned based on prioritized control logic:
 \begin{itemize}
-    \item STOP, if the brake value exceeded a defined threshold.
-    \item RIGHT, if the steering value was significantly positive and throttle was active.
-    \item LEFT, if the steering value was significantly negative and throttle was active.
-    \item GO, for all remaining cases where the vehicle moved straight without braking or significant steering.
+    \item \texttt{STOP}, if brake $> 0.5$ and throttle $< 0.2$
+    \item \texttt{RIGHT}, if steering $> 0.1$ and brake $< 0.5$
+    \item \texttt{LEFT}, if steering $< -0.1$ and brake $< 0.5$
+    \item \texttt{GO}, if throttle $> 0.5$ and $|\text{steering}| < 0.1$
 \end{itemize}
 
-This approach ensured mutually exclusive and semantically meaningful labels for each image. Threshold values for labeling were empirically determined based on the distribution of control signals across the dataset. The process was fully automated, ensuring reproducibility and eliminating manual labeling bias.
+
+These thresholds were empirically determined based on the distribution of control signals in the dataset (see \appref{appendix:labeling}, Table~\ref{tab:label-thresholds} and Figure~\ref{fig:threshold-histograms}). The labeling logic ensured that each image received a mutually exclusive and semantically meaningful label. The labeling process was fully automated, ensuring reproducibility and eliminating manual bias.
+
+After labeling, the dataset showed natural class imbalance, with STOP and GO dominating and LEFT and RIGHT being underrepresented. To mitigate this, targeted data augmentation was applied to the LEFT and RIGHT classes. Augmentation techniques included horizontal flipping, brightness and contrast adjustment, and slight rotation, preserving semantic integrity while increasing data diversity. Augmented samples retained their original labels, enabling class balancing without compromising label consistency.
+
 
 \subsection{Dataset Splitting}
 
@@ -131,27 +138,28 @@ Following labeling, the dataset was divided into separate training and testing s
 
 The labeled dataset was partitioned using an 80/20 split ratio, where 80\% of the data was used for training and 20\% for testing. This ensured sufficient data for model learning while preserving a representative set for evaluation.
 
-For the binary classification scheme, the training set contained 4,959 GO and 4,728 STOP samples, while the test set included 1,262 GO and 1,160 STOP samples, maintaining a near-balanced distribution across classes. Similarly, for the 4-class setting, all classes (GO, STOP, LEFT, RIGHT) were equally represented with 3,327 samples in training and 821 samples per class in testing. The distributions for both schemes are visualized side by side in Figure~\ref{fig:label_distribution_combined}.
-
-
-\begin{figure}[htbp]
+\begin{figure}
     \centering
     \begin{subfigure}{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{img/dataset/2class_distribution.png}
-        \caption{Binary class (GO, STOP) label distribution}
+        \includegraphics[width=\linewidth]{img/dataset/2-class_distribution_pie_chart.png}
+        \caption{Binary class label distribution}
         \label{fig:binary_class_distribution}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.5\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{img/dataset/4class_distribution.png}
-        \caption{multi-class label distribution (GO, STOP, LEFT, RIGHT)}
+        \includegraphics[width=\linewidth]{img/dataset/4-class_distribution_pie_chart.png}
+        \caption{multi-class label distribution}
         \label{fig:class_distribution_pie}
     \end{subfigure}
     \caption{Label distributions across training and testing datasets for binary and multi-class classification schemes.}
     \label{fig:label_distribution_combined}
 \end{figure}
+
+For the binary classification scheme, the training set contained 4,959 GO and 4,728 STOP samples, while the test set included 1,262 GO and 1,160 STOP samples, maintaining a near-balanced distribution across classes. In the multi-class configuration, STOP and GO had naturally higher counts (3,772 and 3,422 respectively), while LEFT and RIGHT were augmented to match these counts, ensuring class balance. Each class in the final balanced 4-class training set had approximately 3,772 samples, and the corresponding test set contained 926 STOP, 883 GO, 141 LEFT, and 117 RIGHT samples prior to augmentation. The distributions for both schemes are visualized side by side in Figure~\ref{fig:label_distribution_combined}.
+
+
 
 
 
@@ -163,9 +171,18 @@ This section outlines the architectural design, training process for the Variati
 
 To generate semantically coherent and visually realistic counterfactual explanations that remain on the data manifold, we adopt a Variational Autoencoder (VAE) as the generative backbone of the system. This approach draws conceptual motivation from the Contrastive Explanation Method (CEM)~\cite{DBLP:journals/corr/abs-1802-07623}, which leverages autoencoders to constrain generated samples within the support of the data distribution. While CEM was originally evaluated on low-dimensional datasets such as MNIST, the application domain involves high-resolution RGB images from complex driving scenarios. Consequently, the VAE architecture, training objective, and optimization strategy were carefully adapted and refined over multiple design iterations.
 
+Meanwhile, Figure~\ref{fig:image_reconstruction_from_vae} shows the image transformation that takes place after it has been fed into the VAE. 
+
 \subsection{VAE Architecture} \label{sec:vae_architecture}
 
 The VAE consists of two primary components, a convolutional encoder that transforms the input image into a latent distribution, and a decoder that reconstructs the image from a sampled latent vector. The encoder and decoder are trained jointly using a variational loss function that enforces both reconstruction fidelity and latent space regularization.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{img/vae/image_reconstructed_from_vae.drawio.png}
+    \caption{Image reconstruction from our VAE model}
+    \label{fig:image_reconstruction_from_vae}
+\end{figure}
 
 \subsubsection{Encoder Architecture} \label{subsubsec:vae_encoder}
 
@@ -231,6 +248,28 @@ For the testing phase, only the essential deterministic transformations were app
     \item Tensor conversion with pixel scaling
 \end{itemize}
 
+\subsection{Hyperparameter Configuration} \label{subsec:hyperparameter_config}
+Table~\ref{tab:vae_hyperparams} lists the core hyperparameters used across all VAE training experiments.
+
+\begin{table}[h]
+    \centering
+    \caption{Hyperparameter settings for VAE training.}
+    \label{tab:vae_hyperparams}
+    \begin{tabular}{|l|c|}
+        \hline
+        \textbf{Parameter} & \textbf{Value} \\
+        \hline
+        Latent Dimension & 128 \\
+        Batch Size & 128 \\
+        Epochs & 200 \\
+        Learning Rate & $1 \times 10^{-4}$ \\
+        KL Weight Initial & $5 \times 10^{-5}$ \\
+        KL Annealing Schedule & Linear \\
+        Optimizer & Adam \\
+        Reconstruction Loss & MSE / Log-Cosh (as per experiment) \\
+        \hline
+    \end{tabular}
+\end{table}
 
 \subsection{Training Objective and Optimization Strategy} \label{subsec:vae_loss}
 
@@ -242,12 +281,12 @@ The VAE is trained using a composite variational loss function, defined as:
 \]
 where $\mathcal{L}_{\text{recon}}$ denotes the reconstruction loss, and $\mathcal{L}_{\text{KL}}$ represents the Kullback-Leibler (KL) divergence. The scalar $\lambda_{\text{KL}}$ controls the regularization strength applied to the latent space.
 
-\paragraph{Reconstruction Loss:} \label{reconstruction_loss}
+\subsubsection{Reconstruction Loss:} \label{reconstruction_loss}
 
 To assess the impact of different loss formulations on reconstruction quality, two reconstruction loss functions were implemented and compared:
 \begin{itemize}
     \item \textbf{Mean Squared Error (MSE):} Measures the average squared difference between corresponding pixel intensities of the input and reconstructed images. It emphasizes pixel-level fidelity and is a standard choice in image reconstruction tasks.
-    \item \textbf{Log-Cosh Loss:} A smooth approximation of the Mean Absolute Error (MAE), which behaves like MSE for small differences and like MAE for large ones. It is more tolerant to outliers and encourages sharper reconstructions.
+    \item \textbf{log hyperbolic cosine (log-cosh) loss:} A smooth approximation of the Mean Absolute Error (MAE), which behaves like MSE for small differences and like MAE for large ones. It is more tolerant to outliers and encourages sharper reconstructions.
 \end{itemize}
 
 Empirical results showed that Log-Cosh yielded smoother and more visually coherent reconstructions during early training epochs, particularly in complex scenes. This finding is supported by prior work, such as Chen et al.~\cite{chen2019log}, and a detailed comparison is presented in \cref{subsec:vae_quant_comparison}.
@@ -255,17 +294,18 @@ Empirical results showed that Log-Cosh yielded smoother and more visually cohere
 \paragraph{KL Divergence Regularization:}
 
 The KL divergence term ensures that the learned posterior distribution $q(z|x)$ remains close to the unit Gaussian prior $p(z) = \mathcal{N}(0, I)$:
-\[
-\mathcal{L}_{\text{KL}} = -\frac{1}{2} \sum_{i=1}^{d} \left(1 + \log\sigma_i^2 - \mu_i^2 - \sigma_i^2\right)
-\]
-This regularization helps enforce a well-structured latent space, enabling smooth interpolation and meaningful sampling—both of which are critical for generating plausible counterfactual samples.
+\begin{equation}
+    \mathcal{L}_{\text{KL}} = -\frac{1}{2} \sum_{i=1}^{d} \left(1 + \log\sigma_i^2 - \mu_i^2 - \sigma_i^2\right)
+\end{equation}
+
+This regularization promotes a structured latent space, enabling smooth interpolation and semantically meaningful sampling—both of which are essential for generating plausible and interpretable counterfactual explanations. The behaviors qualitative latent space is plotted and explained in \cref{subsubsec:vae_latent_space}.
 
 \paragraph{KL Weight Annealing:}
 
-To prevent the KL term from dominating the loss function too early in training before the reconstruction objective is sufficiently optimized a linear annealing strategy was used:
-\[
+To prevent the KL term from dominating the loss function prematurely—before the reconstruction objective is sufficiently optimized—a linear annealing schedule was adopted
+\begin{equation}
 \lambda_{\text{KL}} = \min(\lambda_0 + \delta \cdot \text{epoch}, 1.0)
-\]
+\end{equation}
 where $\lambda_0 = 5 \times 10^{-5}$ and $\delta = 1 \times 10^{-4}$. This allows the model to initially focus on accurate reconstruction and gradually introduce regularization, leading to a better trade-off between fidelity and latent structure.
 
 \paragraph{Training Configuration:}
@@ -390,7 +430,7 @@ This includes LIME on Latent Features and LIME with nearest-unlike-neighbour (NU
     \item \textbf{LIME-Guided Latent Feature Masking using NUN:} Combines LIME-based feature importance with the nearest-unlike-neighbour strategy, selecting feature replacements that are more robust and semantically meaningful. LIME-Guided Latent Feature Masking using NUN is formally called LIME with NUN throughout the thesis.
 \end{itemize}
 
-For each method, similarity metrics (SSIM, PSNR, MSE, UQI, VIFP) are computed between the original and reconstructed images to assess visual fidelity. All results, including prediction changes, classifier confidences, masking parameters, and processing time, are logged into method-specific files for analysis. If the prediction changes after masking, the example is labeled as a successful counterfactual. This analysis directly supports answering the research question outlined in \cref{sec:research_question}, particularly \textbf{RQ3}.
+For each method, similarity metrics (SSIM, PSNR, MSE) are computed between the original and reconstructed images to assess visual fidelity. All results, including prediction changes, classifier confidences, masking parameters, and processing time, are logged into method-specific files for analysis. If the prediction changes after masking, the example is labeled as a successful counterfactual. This analysis directly supports answering the research question outlined in \cref{sec:research_question}, particularly \textbf{RQ3}.
 
 
 In the subsequent subsections, each masking method is detailed along with its algorithm, implementation logic.
@@ -402,89 +442,80 @@ Grid-based masking is a spatial perturbation technique designed to generate coun
 
 This method follows the general feature masking pipeline outlined in Section~\ref{sec:feature_masking_pipeline}. First, the input image is encoded into a latent representation using a Variational Autoencoder (VAE). The latent features are passed to a classifier to generate the original prediction, and the image is also reconstructed via decoding for consistency. The masking operation is applied directly to the pixel space by zeroing out specific spatial regions (grid cells) before the image is re-encoded, reconstructed, and re-evaluated by the classifier.
 
-To balance localization precision and computational efficiency, we experimented with multiple grid sizes and empirically selected two square grid configurations based on performance. 
-
+To balance localization accuracy and computational efficiency, two grid sizes were used:
 \begin{itemize}
-    \item \textbf{Fine grid:} $8 \times 16$ (each cell is $10 \times 10$ pixels)
-    \item \textbf{Coarse grid:} $4 \times 8$ (each cell is $20 \times 20$ pixels)
+\item \textbf{Fine grid:} $8 \times 16$ (each cell is $10 \times 10$ pixels)
+\item \textbf{Coarse grid:} $4 \times 8$ (each cell is $20 \times 20$ pixels)
 \end{itemize}
+These sizes align with the image resolution ($160 \times 80$), ensuring full spatial coverage without distortion. Fine grids provide precise region localization, while coarse grids offer broader masking and faster evaluation. Other configurations (e.g., $10 \times 5$, $4 \times 2$) were explored, but square-like configurations showed better interpretability and reliability.
 
-These configurations were chosen in alignment with the image resolution ($160 \times 80$), ensuring uniform spatial coverage without distorting the image’s structure. The fine grid enables detailed localization of influential features, while the coarse grid offers broader contextual masking. During preliminary experiments, alternative grid sizes such as $10 \times 5$ and $4 \times 2$ were also evaluated. However, the square-like configurations were found to yield more reliable and interpretable results, likely due to their equal-area masking and reduced spatial bias.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.95\textwidth]{img/masking/grid_based_masking/grid_based_masking_flow.drawio.png}
-\caption{Workflow of the grid-based counterfactual generation process. Grid cells are masked sequentially in two stages: a fine grid ($8 \times 16$) and a coarse grid ($4 \times 8$). Masked images are reconstructed using a VAE and re-evaluated by the classifier. A prediction change implies that the masked region was causally important.}
-\label{fig:grid_masking_diagram}
-\end{figure}
-
-The masking follows a sequential strategy, beginning with the finer grid. Each cell is masked individually by zeroing its pixel values. If masking any one cell results in a change in the model’s prediction, a counterfactual is deemed to have been found, and the process terminates early. This behavior adheres to the principle of \textit{minimal intervention}~\cite{wachter2018CE}, wherein the smallest possible change is sufficient to alter the decision. If no counterfactual is detected in the fine grid, the search continues with the coarse grid.
-
-Once a cell is masked, the resulting image is passed through the encoder-decoder pipeline to maintain visual plausibility. The reconstructed image is then re-encoded and classified. A prediction change signifies that the masked region played a decisive role in the original decision, and thus constitutes a valid counterfactual explanation.
+The masking algorithm employs a sequential two-stage process. It starts with the fine grid: each grid cell is masked (pixel values zeroed), and the modified image is passed through the encoder-decoder-classifier pipeline. If masking a cell leads to a prediction change, the process stops, returning that instance as a counterfactual. If no counterfactual is found using the fine grid, the algorithm proceeds to the coarse grid. This strategy ensures that the most precise and minimal explanation is identified first, in alignment with the principle of \textit{minimal intervention}~\cite{wachter2018CE}, which seeks to identify the smallest possible input change that alters the model's decision.
 
 
-\vspace{1em}
+The algorithm~\ref{alg:grid_based_masking} for this method is detailed below, and the corresponding workflow is illustrated in figure~\ref{fig:grid_masking_diagram}. This figure visually represents the step-by-step flow of the grid-based masking process. It begins with encoding the original image using a VAE encoder and classifying the latent vector to record the initial prediction. The image is then sequentially masked at the grid-cell level. For each masked version, the image is passed through the encoder-decoder pipeline to preserve visual plausibility, then re-encoded and reclassified. If the new prediction differs from the original, the region masked is considered causally important, and a counterfactual explanation is identified. If no such prediction change is observed through both fine and coarse grid levels, the method concludes with no counterfactual found.
+
 \begin{algorithm}[htbp]
 \caption{Grid-Based Masking for Counterfactual Generation}
 \label{alg:grid_based_masking}
 \begin{algorithmic}[1]
-\REQUIRE Image $I$, encoder $E$, decoder $D$, classifier $C$, grid configurations $G = \{(8,16), (4,8)\}$
+\REQUIRE Image $I$, encoder $E$, decoder $D$, classifier $C$, grid configurations $G = {(8,16), (4,8)}$
 \ENSURE Whether a counterfactual explanation is found
 
-\STATE Encode image: $z \leftarrow E(I)$
+\STATE Encode original image: $z \leftarrow E(I)$
 \STATE Predict original label: $y_{\text{orig}} \leftarrow \arg\max C(z)$
 
 \FOR{each grid size $(m, n)$ in $G$}
-    \STATE $T \leftarrow m \times n$
-    \FOR{$p = 0$ to $T - 1$}
-        \STATE Mask grid cell $p$ in $I$ to obtain $I_{\text{masked}}$
-        \STATE Encode: $z_{\text{masked}} \leftarrow E(I_{\text{masked}})$
-        \STATE Decode: $I_{\text{recon}} \leftarrow D(z_{\text{masked}})$
-        \STATE Re-encode: $z_{\text{re}} \leftarrow E(I_{\text{recon}})$
-        \STATE Predict: $y_{\text{new}} \leftarrow \arg\max C(z_{\text{re}})$
-        \IF{$y_{\text{new}} \neq y_{\text{orig}}$}
-            \RETURN Counterfactual explanation found
-        \ENDIF
-    \ENDFOR
+\STATE Total cells $T \leftarrow m \times n$
+\FOR{$p = 0$ to $T - 1$}
+\STATE Mask grid cell $p$ in $I$ to obtain $I_{\text{masked}}$
+\STATE Encode: $z_{\text{masked}} \leftarrow E(I_{\text{masked}})$
+\STATE Decode: $I_{\text{recon}} \leftarrow D(z_{\text{masked}})$
+\STATE Re-encode: $z_{\text{re}} \leftarrow E(I_{\text{recon}})$
+\STATE Predict: $y_{\text{new}} \leftarrow \arg\max C(z_{\text{re}})$
+\IF{$y_{\text{new}} \neq y_{\text{orig}}$}
+\RETURN Counterfactual explanation found
+\ENDIF
+\ENDFOR
 \ENDFOR
 
 \RETURN No counterfactual explanation found
 \end{algorithmic}
 \end{algorithm}
-% \vspace{1em}
-
-
-Figure~\ref{fig:grid_masking_diagram} illustrates the complete grid-based masking workflow. It highlights how the original image is masked, reconstructed, and re-classified. A prediction change from \texttt{STOP} to \texttt{GO} following the masking of a grid cell demonstrates the effectiveness of this approach in revealing causally salient regions. The masked region is processed through a VAE to maintain visual plausibility, ensuring that the model’s reaction is not triggered by implausible image artifacts.
 
 \begin{figure}[htbp]
-\centering
-\begin{subfigure}[b]{0.3\textwidth}
-    \includegraphics[width=\textwidth]{img/masking/grid_based_masking/original.png}
-    \caption{Original Image}
-    \label{fig:grid_orig}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.3\textwidth}
-    \includegraphics[width=\textwidth]{img/masking/grid_based_masking/reconstructed_grid_masked_image.png}
-    \caption{Masked Grid Region}
-    \label{fig:grid_masked}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.3\textwidth}
-    \includegraphics[width=\textwidth]{img/masking/grid_based_masking/CE_grid.png}
-    \caption{Reconstructed CE Image}
-    \label{fig:grid_recon}
-\end{subfigure}
-\caption{
-Counterfactual explanation generated using grid-based masking. (a) The original image is classified as \texttt{STOP}. (b) A specific grid cell overlapping the STOP sign is masked (blackout). (c) The masked image is reconstructed using a VAE, and reclassified as \texttt{GO}. The change in prediction indicates that the masked region contained causally important features responsible for the initial decision. This result exemplifies the effectiveness of spatial masking in isolating minimal influential regions.
-}
-\label{fig:grid_ce_example}
+    \centering
+    \includegraphics[width=0.95\textwidth]{img/masking/grid_based_masking/grid_based_masking_flow.drawio.png}
+    \caption[Workflow of grid-based counterfactual generation]{Workflow of grid-based counterfactual generation. Grid cells are masked sequentially. If a prediction change occurs after VAE-based reconstruction, the masked region is considered causally influential.}
+    \label{fig:grid_masking_diagram}
 \end{figure}
 
-Figure~\ref{fig:grid_ce_example} illustrates the counterfactual generation process using the proposed grid-based masking method. A fine grid is applied to the original image, and each cell is evaluated sequentially. In this instance, masking a specific cell overlapping the STOP sign caused the classifier to change its prediction from \texttt{STOP} to \texttt{GO}. This confirms that the masked region was essential to the model’s decision. The reconstructed image, generated via a Variational Autoencoder, remains visually plausible, ensuring that the change in classification is not due to unrealistic input artifacts.
+Figure~\ref{fig:grid_ce_example} shows an example: an image originally classified as \texttt{STOP} changes to \texttt{GO} after masking a grid cell overlapping the STOP sign. This demonstrates that the masked region contained features that were critical for the classifier's decision. By reconstructing the masked image through the VAE, visual plausibility is preserved, ensuring that prediction changes are not caused by unrealistic artifacts.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{img/masking/grid_based_masking/original.png}
+        \caption{Original Image}
+        \label{fig:grid_orig}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{img/masking/grid_based_masking/reconstructed_grid_masked_image.png}
+        \caption{Masked Grid Region}
+        \label{fig:grid_masked}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{img/masking/grid_based_masking/CE_grid.png}
+        \caption{Reconstructed CE Image}
+        \label{fig:grid_recon}
+    \end{subfigure}
+    \caption[Grid-based counterfactual example]{Counterfactual example via grid-based masking. (a) Original image predicted as \texttt{STOP}. (b) Masking a cell over the STOP sign. (c) Reconstructed image predicted as \texttt{GO}, indicating the masked region's importance.}
+    \label{fig:grid_ce_example}
+\end{figure}
 
 
-
+\clearpage
 
 \subsection{Object Detection-Based Masking} \label{sec:object_detection_masking}
 
@@ -494,13 +525,12 @@ Following the general masking pipeline described in Section~\ref{sec:feature_mas
 
 To achieve this, a pre-trained YOLOv5 model~\cite{jocher2020yolov5} is integrated into the pipeline to detect and localize objects present in the input image. The full workflow is illustrated in Figure~\ref{fig:object_detection_workflow}, combining object detection, VAE-based reconstruction, and classifier re-evaluation to identify counterfactuals. YOLOv5 is a single-stage object detector known for its speed and accuracy across 80 COCO classes~\cite{lin2015microsoftcococommonobjects}, including vehicles, persons, and traffic control elements. Each detected object is described by a bounding box $(x_{\min}, y_{\min}, x_{\max}, y_{\max})$, which defines the region to be masked. The overall procedure is summarized in Algorithm~\ref{alg:object_detection_masking}.
 
-\begin{figure}
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.95\textwidth]{img//masking//object_detection/object_detection_based_masking_flow.drawio.png}
-    \caption{
-Workflow of the object detection-based counterfactual explanation pipeline. The input image is first encoded using a Variational Autoencoder (VAE) to obtain a latent representation. The classifier predicts the original driving decision (e.g., \texttt{STOP}). Simultaneously, a pre-trained YOLOv5 detector identifies objects in the image. One detected object (e.g., a STOP sign) is masked and passed through the encoder-decoder pipeline to reconstruct a visually plausible image. If reclassification of this reconstruction results in a different label (e.g., \texttt{GO}), a counterfactual explanation is found. The process is iterated per object, and the first valid counterfactual is retained.
-}
-\label{fig:object_detection_workflow}
+    \includegraphics[width=0.95\textwidth]{img/masking/object_detection/object_detection_based_masking_flow.drawio.png}
+    \caption[Workflow of object detection-based counterfactual generation]{%
+    Workflow of the object detection-based counterfactual explanation pipeline. The input image is first encoded using a Variational Autoencoder (VAE) to obtain a latent representation. The classifier predicts the original driving decision (e.g., \texttt{STOP}). Simultaneously, a pre-trained YOLOv5 detector identifies objects in the image. One detected object (e.g., a STOP sign) is masked and passed through the encoder-decoder pipeline to reconstruct a visually plausible image. If reclassification of this reconstruction results in a different label (e.g., \texttt{GO}), a counterfactual explanation is found. The process is iterated per object, and the first valid counterfactual is retained.}
+    \label{fig:object_detection_workflow}
 \end{figure}
 
 For each image, the process proceeds iteratively over all detected objects. The pixels inside the bounding box are zeroed out—effectively removing the object from the scene. This masked image is then processed through the VAE's encoder-decoder pipeline and re-classified. If the model's output label changes compared to the original prediction, a counterfactual explanation is said to have been generated. To adhere to the principle of minimal intervention~\cite{wachter2018CE}, only the first successful object level perturbation that triggers a label change is retained per image, ensuring a sparse and interpretable explanation.
@@ -508,7 +538,7 @@ For each image, the process proceeds iteratively over all detected objects. The 
 In cases where multiple objects are detected but none cause the decision to flip, the method concludes that no object-level counterfactual exists for that specific scene. Additionally, if no objects are detected, the image is skipped from object-based masking consideration.
 
 \vspace{1em}
-\begin{algorithm}[H]
+\begin{algorithm}[h]
 \caption{Object Detection-Based Masking for Counterfactual Generation}
 \label{alg:object_detection_masking}
 \begin{algorithmic}[1]
@@ -563,10 +593,9 @@ This method brings semantic granularity to counterfactual explanation by connect
     \caption{Reconstructed Image}
     \label{fig:reconstructed}
 \end{subfigure}
-\caption{
-Counterfactual generation through object detection-based masking in a CARLA driving scene. (a) The original image as captured. (b) A STOP sign is detected and localized using YOLOv5. (c) The STOP sign is masked by zeroing out its bounding box. (d) The masked image is reconstructed using a Variational Autoencoder (VAE). The classifier changes its prediction from \texttt{STOP} to \texttt{GO}, indicating that the STOP sign was a causally decisive feature in the original decision.
-}
-\label{fig:object_detection_masking}
+    \caption[Example of object detection-based counterfactual explanation]{%
+    Counterfactual generation through object detection-based masking in a CARLA driving scene. (a) The original image as captured. (b) A STOP sign is detected and localized using YOLOv5. (c) The STOP sign is masked by zeroing out its bounding box. (d) The masked image is reconstructed using a Variational Autoencoder (VAE). The classifier changes its prediction from \texttt{STOP} to \texttt{GO}, indicating that the STOP sign was a causally decisive feature in the original decision.}
+    \label{fig:object_detection_masking}
 \end{figure}
 
 
@@ -587,183 +616,195 @@ This example validates the semantic sensitivity of the proposed method. It revea
 \subsection{LIME on Image-Based Masking}
 \label{sec:lime_on_images}
 
-Local Interpretable Model-Agnostic Explanations (LIME) is an explainability technique that identifies input regions most responsible for a model’s prediction by perturbing the input and observing the resulting changes in output probabilities~\cite{Ribeiro2018}. For image data, LIME segments the input into superpixels and perturbs the image by masking these regions, then learns a local surrogate model to approximate the classifier’s decision boundary.
+Local Interpretable Model-Agnostic Explanations (LIME) is a post-hoc interpretability method that explains individual predictions by approximating a black-box model locally using an interpretable surrogate model~\cite{Ribeiro2018}. In the image domain, LIME operates by segmenting the input image into superpixels, selectively masking them, and observing the change in model predictions to determine which regions are most influential.
 
-In this method, LIME is integrated into the counterfactual generation pipeline to evaluate whether removing highly influential visual regions can lead to a prediction flip. If the classifier changes its decision after masking the top-$k$ most important superpixels, the explanation is considered a valid counterfactual explanation (CE), indicating that the masked regions had a causal impact on the prediction.
+In this method, we integrate LIME into our counterfactual generation pipeline to test whether masking the most influential visual regions leads to a prediction flip. Specifically, we assess whether the top-$k$ superpixels (with $k=5$) identified by LIME as positively contributing to the predicted class are causally decisive. If masking these regions causes the classifier’s prediction to change, we consider this a successful counterfactual explanation (CE).
 
-We follow the unified masking pipeline described in Section~\ref{sec:feature_masking_pipeline}. First, the input image is passed through a Variational Autoencoder (VAE) to obtain a latent representation, which is then classified using a downstream classifier. LIME is applied to the \emph{raw input image} to compute a saliency mask highlighting the top-$k$ positively contributing superpixels (we use $k=5$), representing the most influential visual regions for the predicted class.
+This method follows the unified pipeline described in Section~\ref{sec:feature_masking_pipeline}. The raw input image is first classified via a VAE-encoder and latent-space classifier setup. LIME is applied to the original image to compute the contribution of each superpixel to the classifier’s decision. Importantly, the prediction function passed to LIME encapsulates two steps: (i) encoding the perturbed image via the VAE encoder and (ii) computing class probabilities from the latent vector using the classifier.
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[width=0.95\textwidth]{img/masking/lime_on_images/lime_on_images_based_masking_flow.drawio.png}
-    \caption{
-    Workflow of the LIME-based counterfactual explanation pipeline. The input image is encoded using a VAE and classified to determine the original label (e.g., \texttt{STOP}). LIME is applied to the input image to identify the most influential superpixels. These regions are then hard-masked (blacked out), and the resulting image is passed through the encoder-decoder pipeline. The reconstructed image is re-encoded and re-classified. If the predicted class changes (e.g., from \texttt{STOP} to \texttt{GO}), a counterfactual explanation is found.
-    }
-    \label{fig:lime_image_workflow}
-\end{figure}
-
-To mask these regions, we adopt a hard masking strategy where the selected superpixels are replaced with a solid black color (i.e., pixel intensities set to zero). This masking approach is consistent with the strategies used in grid-based and object detection-based masking, promoting interpretability and ensuring uniformity across different masking techniques. The LIME-based masking operation can be formally expressed as:
-
+For the masking step, we use a hard-masking strategy where the selected top-$k$ superpixels are set to zero (black). This choice aligns with the masking protocol used in grid-based and object detection-based methods, ensuring methodological consistency across techniques. The masking operation is defined as:
 \[
 I_{\text{masked}} = I \odot (1 - M),
 \]
+where \( I \) is the original image, and \( M \) is a binary mask indicating the superpixels selected by LIME.
 
-where \( I \) is the original image, \( M \) is the binary LIME mask corresponding to the top-$k$ superpixels, and the masked image \( I_{\text{masked}} \) is generated by blacking out these regions.
+After masking, the perturbed image is processed through the VAE’s encoder-decoder pathway to ensure reconstruction plausibility. The reconstructed image is re-encoded and reclassified. A change in classification outcome at this stage confirms the counterfactual nature of the masked regions.
 
-Next, the masked image is passed through the VAE encoder to obtain a new latent representation, which is then decoded to reconstruct an image. This reconstructed image is re-encoded and classified again. If the predicted label changes at this stage, the masking is considered to have revealed a counterfactual explanation, indicating the causal importance of the masked regions.
+The full workflow is illustrated in Figure~\ref{fig:lime_image_workflow}, and the algorithmic steps are formalized in Algorithm~\ref{alg:lime_on_images}. This visual pipeline emphasizes the sequential transformation from original input to counterfactual outcome, highlighting LIME’s role in superpixel selection and the VAE’s function in generating visually coherent explanations.
 
-Although LIME operates in the image space, the explanation it provides is ultimately linked to the classifier trained on the VAE’s latent representation. The prediction function passed to LIME includes two components: (i) encoding the perturbed image using the VAE encoder to obtain the latent vector, and (ii) passing this vector to the classifier to compute prediction probabilities. The decoder is only used after masking, to generate visually coherent reconstructions required for downstream evaluation. This end-to-end workflow is visually illustrated in Figure~\ref{fig:lime_image_workflow}, and the entire algorithmic process is outlined in Algorithm~\ref{alg:lime_on_images}.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{img/masking/lime_on_images/lime_on_images_based_masking_flow.drawio.png}
+    \caption[Workflow of LIME-based counterfactual generation]{%
+Workflow of the LIME-based counterfactual explanation pipeline. The input image is classified through the VAE encoder and classifier. LIME identifies top-$k$ superpixels, which are hard-masked. The masked image is reconstructed via the decoder, re-encoded, and reclassified. A prediction flip indicates a successful counterfactual explanation.}
+    \label{fig:lime_image_workflow}
+\end{figure}
 
 
 
-\begin{algorithm}[ht]
+\begin{algorithm}[htbp]
 \caption{LIME on Images for Counterfactual Generation (Hard Masking)}
 \label{alg:lime_on_images}
 \begin{algorithmic}[1]
 \REQUIRE Image $I$, encoder $E$, decoder $D$, classifier $C$, LIME explainer $L$
 \ENSURE Whether a counterfactual explanation is found
 
-\STATE Encode image: $z \leftarrow E(I)$
-\STATE Predict original label: $y_{\text{orig}} \leftarrow \arg\max C(z)$
-
-\STATE Generate LIME explanation: $M \leftarrow L(I, C)$
-\STATE Select top-$k$ regions: $R \leftarrow \text{Mask}(M, k=5)$
-\STATE Apply hard masking: $I_{\text{masked}} \leftarrow I \odot (1 - R)$
-
-\STATE Encode: $z_{\text{masked}} \leftarrow E(I_{\text{masked}})$
-\STATE Decode: $I_{\text{recon}} \leftarrow D(z_{\text{masked}})$
-\STATE Re-encode: $z_{\text{re}} \leftarrow E(I_{\text{recon}})$
-\STATE Predict new label: $y_{\text{new}} \leftarrow \arg\max C(z_{\text{re}})$
-
+\STATE $z \leftarrow E(I)$ \hfill // Encode original image
+\STATE $y_{\text{orig}} \leftarrow \arg\max C(z)$ \hfill // Predict original class
+\STATE $M \leftarrow L(I, C)$ \hfill // Compute LIME mask
+\STATE $R \leftarrow \text{Mask}(M, k=5)$ \hfill // Select top-$k$ superpixels
+\STATE $I_{\text{masked}} \leftarrow I \odot (1 - R)$ \hfill // Apply hard masking
+\STATE $z_{\text{masked}} \leftarrow E(I_{\text{masked}})$
+\STATE $I_{\text{recon}} \leftarrow D(z_{\text{masked}})$
+\STATE $z_{\text{re}} \leftarrow E(I_{\text{recon}})$
+\STATE $y_{\text{new}} \leftarrow \arg\max C(z_{\text{re}})$
 \IF{$y_{\text{new}} \neq y_{\text{orig}}$}
     \RETURN Counterfactual explanation found
 \ENDIF
-
 \RETURN No counterfactual explanation found
 \end{algorithmic}
 \end{algorithm}
 
-Compared to grid-based or object detection-based masking, LIME provides an \emph{adaptive and data-driven} approach to region selection. It focuses only on the most relevant image regions for a given prediction, enhancing interpretability and explanation quality. The corresponding results on this method and comparing the effectiveness to other methods are detailed in \cref{sec:masking_eval}.
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[b]{0.3\textwidth}
+    \includegraphics[width=\textwidth]{img/appendix/original_town7_000980.png}
+    \caption{Original Image (\texttt{STOP})}
+    \label{fig:lime_orig}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.3\textwidth}
+    \includegraphics[width=\textwidth]{img/appendix/LIME_on_Image_maksed_town7_000980.png}
+    \caption{LIME-masked Superpixels}
+    \label{fig:lime_masked}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.3\textwidth}
+    \includegraphics[width=\textwidth]{img/appendix/LIME_on_Image_reconstructed_town7_000980.png}
+    \caption{Reconstructed Image (\texttt{GO})}
+    \label{fig:lime_recon}
+\end{subfigure}
+\caption[Example of counterfactual via LIME on images]{%
+Example of counterfactual explanation using LIME-based image masking. (a) The original input is classified as \texttt{STOP}. (b) Top-5 superpixels identified by LIME are masked. (c) The reconstructed image causes the model to flip its prediction to \texttt{GO}, indicating those regions were causally decisive.}
+\label{fig:lime_image_example}
+\end{figure}
+
+
+
+
+Figure~\ref{fig:lime_image_example} illustrates a concrete example where masking the LIME-identified regions causes the prediction to flip from \texttt{STOP} to \texttt{GO}, indicating the effectiveness of the selected superpixels in driving the original decision.
+
+
+
+Compared to grid-based or object detection-based masking, LIME provides an adaptive, model-agnostic strategy for identifying causally important regions. Unlike fixed spatial masking, it focuses only on the most relevant superpixels for a specific prediction. The comparative evaluation of this method is presented in Section~\ref{sec:masking_eval}.
 
 
 
 
 
-\vspace{1em}
+\clearpage
+% \vspace{1em}
 \subsection{LIME-Based Masking on Latent Features} \label{sec:lime_based_masking_on_latent_features}
 
 \subsubsection*{Latent Feature Statistics Preprocessing}
 \label{sec:latent_statistics_preprocessing}
-Before applying LIME-based masking in the latent space, it is essential to establish dataset level statistical priors for each latent dimension. This ensures that when latent features are perturbed or replaced, the substituted values remain within a plausible range, preserving semantic consistency.
 
-To compute these priors, all images from the training and test sets are encoded using the trained Variational Autoencoder (VAE) encoder, yielding a 128-dimensional latent vector for each image. The collection of these vectors across the dataset is used to compute per-dimension statistics, including the mean, median, minimum, maximum, and standard deviation.
-
-These computed statistics are used during the masking phase to replace influential latent features. For instance, if LIME identifies a latent dimension as critical to the current classification, its value can be substituted with the median or mean value from the dataset to simulate a more neutral configuration. This strategy ensures that the modified latent vectors remain close to the data manifold, improving the realism of generated counterfactuals.
-
-These statistics serve as the foundation for the LIME on Latent Features method and its Nearest Unchanged Neighbor (NUN) extension.
+Before applying LIME in the latent space, we compute dataset-level priors to ensure plausible latent perturbations. All images from the dataset are passed through the trained Variational Autoencoder (VAE) encoder to extract their 128-dimensional latent representations. From these, per-dimension statistics such as mean, median, min, max, and standard deviation are calculated. These values are stored and later used to replace influential latent features with neutral values (e.g., medians), helping to preserve semantic coherence during counterfactual generation.
 
 
-\subsection{LIME on Latent Features}
+
+
+\subsection{LIME on Latent Features Masking}
 \label{sec:lime_on_latent}
 
-This method applies the LIME (Local Interpretable Model-Agnostic Explanations) algorithm directly to the latent space of a trained Variational Autoencoder (VAE) to identify and mask the most influential latent dimensions contributing to the model's classification. Unlike image-space LIME, this approach operates on the compressed latent representation $z \in \mathbb{R}^{128}$, thereby enabling counterfactual reasoning at a more abstract and semantically meaningful level.
+In this approach, LIME is applied directly to the VAE latent space to identify and perturb the most influential latent dimensions responsible for a classifier’s decision. Unlike its image-space counterpart, this method enables counterfactual reasoning at a higher semantic level.
 
-Prior to this step, dataset-level statistics such as the median of each latent dimension are computed and stored, as described in Section~\ref{sec:latent_statistics_preprocessing}. These median values, denoted as $\bar{z} \in \mathbb{R}^{128}$, are used as neutral replacements for feature masking.
+As illustrated in Figure~\ref{fig:lime_latent_workflow}, the input image \( I \) is encoded into a latent vector \( z = E(I) \), and a downstream classifier \( C \) predicts the class \( y_{\text{orig}} = \arg\max C(z) \). LIME is then applied to this latent vector using a prediction function composed of \( C \circ E \), producing a ranked list of feature importances \( \{(w_i, i)\} \), where \( w_i \) is the importance of latent dimension \( i \).
 
-As shown in the workflow in Figure~\ref{fig:lime_latent_workflow}, the VAE encoder maps the input image $I$ into a latent representation $z = E(I)$. A downstream neural classifier $C$ then provides the prediction $\hat{y}_{\text{orig}} = \arg\max C(z)$. LIME is applied on this latent vector to compute a local linear approximation of the classifier’s decision boundary and returns a list of tuples $\{(w_i, i)\}$, where $w_i$ is the importance weight of the $i$-th latent feature.
-
-\begin{figure}[htbp]
-\centering
-    \begin{subfigure}{0.24\textwidth}
-        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/original.png}
-        \caption*{(a) Original image}
-        \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.72\textwidth}
-        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/town7_002748.png_lime_feature_importance_class_STOP_sorted.png}
-        \caption*{(b) LIME importance plot for class \texttt{STOP}, with both weight}
-    \end{subfigure}
-    \vspace{0.5em}
-    \begin{subfigure}{0.72\textwidth}
-        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/town7_002748.png_masked_features.png}
-        \caption*{(c) Features masked using median values and their LIME weights}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.24\textwidth}
-        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/reconstructed_lime_on_features.png}
-        \caption*{(d) Reconstructed image after LIME-based masking}
-    \end{subfigure}
-
-    \caption{LIME on Latent Space Masking: The original image was classified as STOP (confidence: 52.5\%). LIME identified positively contributing latent features, which were progressively replaced by their corresponding dataset-level median values. The prediction flipped to RIGHT (confidence: 48.3\%) after masking 12 features, as seen in the reconstructed image. In the LIME plot, red bars indicate features positively influencing the original prediction, while green bars indicate negative influence. The removed features likely correspond to visual elements such as traffic signals, making the reconstructed image appear navigable toward the right}.
-    \label{fig:lime_latent_example}
-\end{figure}
-
-Only the positively influential features (i.e., $w_i > 0$) are considered for masking, as shown in the sorted LIME importance plot (Figure~\ref{fig:lime_latent_example}b). This choice ensures that we are suppressing features that actively contribute toward the current classification. Replacing negatively influential features (those working against the current class) would potentially reinforce the current decision and thus contradict the goal of counterfactual generation.
-
-The positively weighted features are sorted in descending order of importance, i.e., from the most impactful dimension to the least (Figure~\ref{fig:lime_latent_example}b). Let $\mathcal{F} = \{i_1, i_2, \dots, i_k\}$ denote the ordered set of positively contributing latent feature indices. For each $i \in \mathcal{F}$, the feature $z_i$ is replaced by the corresponding dataset-level median $\bar{z}_i$:
-
+Only positively contributing features (i.e., \( w_i > 0 \)) are considered for masking. These are sorted in descending order of influence to form the set \( \mathcal{F} = \{i_1, i_2, \ldots, i_k\} \). For each index \( i \in \mathcal{F} \), we iteratively replace \( z_i \) with its corresponding median \( \bar{z}_i \) from the dataset:
 
 \[
-z_i^{\text{masked}} = 
+z_i^{\text{masked}} =
 \begin{cases}
 \bar{z}_i & \text{if } i \in \mathcal{F}_{\text{used}} \\
 z_i & \text{otherwise}
 \end{cases}
 \]
 
-The modified latent vector is then passed through the decoder to reconstruct an image $I_{\text{recon}} = D(z^{\text{masked}})$ (Figure~\ref{fig:lime_latent_example}c). This image is re-encoded and classified again to obtain a new prediction $\hat{y}_{\text{new}} = \arg\max C(E(I_{\text{recon}}))$. If $\hat{y}_{\text{new}} \ne \hat{y}_{\text{orig}}$, the explanation is accepted as a valid counterfactual explanation. The corresponding LIME weights and masked features are visualized in Figure~\ref{fig:lime_latent_example}(d).
+The modified latent vector is decoded into an image \( I_{\text{recon}} = D(z^{\text{masked}}) \), re-encoded, and re-classified. If the predicted label \( y_{\text{new}} = \arg\max C(E(I_{\text{recon}})) \) differs from the original prediction, a counterfactual explanation is found.
 
+Figure~\ref{fig:lime_latent_example} shows a qualitative example, including the original image, LIME importance plot, masked latent dimensions, and the reconstructed counterfactual. The red bars in the importance plot indicate features contributing to the original class (\texttt{STOP}), and the green bars indicate opposing contributions. The classifier prediction flips to \texttt{RIGHT} after masking 12 latent features, illustrating the causal role of these high-level representations.
 
+\vspace{0.5em}
+\begin{figure}[h]
+\centering
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/original.png}
+        \caption*{(a) Original image}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.72\textwidth}
+        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/town7_002748.png_lime_feature_importance_class_STOP_sorted.png}
+        \caption*{(b) LIME importance plot for class \texttt{STOP}}
+    \end{subfigure}
+    
+    \vspace{0.5em}
+    
+    \begin{subfigure}{0.72\textwidth}
+        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/town7_002748.png_masked_features.png}
+        \caption*{(c) Masked features with their weights}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{img/masking/lime_on_latent/reconstructed_lime_on_features.png}
+        \caption*{(d) Reconstructed counterfactual}
+    \end{subfigure}
+
+    \caption[Example of LIME-based latent feature masking]{%
+LIME on latent space masking. The input image was originally classified as \texttt{STOP} (confidence: 52.5\%). LIME identified the most influential latent features, which were replaced with their corresponding median values. After masking 12 features, the prediction flipped to \texttt{RIGHT} (confidence: 48.3\%).}
+    \label{fig:lime_latent_example}
+\end{figure}
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.95\linewidth]{img//masking/lime_on_latent/LIME_on_latent_space_masking.png}
-    \caption{Workflow of the LIME-based masking method applied in the latent space of a Variational Autoencoder (VAE). 
-    The input image is first encoded to a 128-dimensional latent vector. A classifier trained on the latent space predicts the original label (e.g., \texttt{STOP}). 
-    LIME is used to determine the top contributing latent features towards this prediction. These features are replaced one by one with their corresponding dataset-level median values (precomputed and stored). 
-    Each masked latent vector is decoded to reconstruct a perturbed image, which is then re-encoded and re-classified. 
-    If the classifier prediction changes (e.g., to \texttt{GO}), a counterfactual explanation is recorded. 
-    The process leverages statistical feature replacement to ensure semantic plausibility, and early stopping is used to identify the minimal set of influential latent dimensions required to flip the decision.
-    }
+    \caption[Workflow of LIME-based latent feature masking]{%
+Workflow of LIME-based latent space masking. After VAE encoding and classification, positively contributing latent features (as identified by LIME) are replaced with dataset-level median values. The decoder reconstructs a perturbed image, which is then re-encoded and re-classified. A prediction change indicates a successful counterfactual.}
     \label{fig:lime_latent_workflow}
 \end{figure}
 
-The full procedure is detailed in Algorithm~\ref{alg:lime_on_latent}, and the complete masking pipeline is illustrated in Figure~\ref{fig:lime_latent_workflow}. This approach ensures semantic plausibility by leveraging dataset-informed statistics and offers a high-level explanation by manipulating deep features learned through the VAE.
+The full procedure is detailed in Algorithm~\ref{alg:lime_on_latent}, which describes how influential latent features are selected, masked using dataset-informed statistics, and evaluated to determine counterfactual validity.
 
-
-\vspace{1em}
-\begin{algorithm}[H]
+\vspace{0.5em}
+\begin{algorithm}[h]
 \caption{LIME-Based Masking on Latent Features}
 \label{alg:lime_on_latent}
 \begin{algorithmic}[1]
 \REQUIRE Image $I$, encoder $E$, decoder $D$, classifier $C$, median latent vector $\bar{z}$
 \ENSURE Whether a counterfactual explanation is found
 
-\STATE $z \leftarrow E(I)$ \hfill // Encode image to latent vector
-\STATE $y_{\text{orig}} \leftarrow \arg\max C(z)$ \hfill // Original prediction
-
-\STATE Use LIME to compute feature importance scores on $z$
-\STATE Select positively influential features $\mathcal{F}$, sorted by importance
-\FOR{feature index $i$ in $\mathcal{F}$}
-    \STATE $z_{\text{masked}} \leftarrow z$ with $z_i \leftarrow \bar{z}_i$
-    \STATE $I_{\text{recon}} \leftarrow D(z_{\text{masked}})$
+\STATE $z \leftarrow E(I)$ \hfill // Encode to latent vector
+\STATE $y_{\text{orig}} \leftarrow \arg\max C(z)$
+\STATE Compute LIME explanations on $z$ w.r.t.\ $C$
+\STATE Select top positively contributing features \( \mathcal{F} \)
+\FOR{each $i \in \mathcal{F}$}
+    \STATE Replace $z_i \leftarrow \bar{z}_i$
+    \STATE $I_{\text{recon}} \leftarrow D(z)$
     \STATE $z_{\text{re}} \leftarrow E(I_{\text{recon}})$
     \STATE $y_{\text{new}} \leftarrow \arg\max C(z_{\text{re}})$
-    \IF{$y_{\text{new}} \neq y_{\text{orig}}$}
+    \IF{$y_{\text{new}} \ne y_{\text{orig}}$}
         \RETURN Counterfactual explanation found
     \ENDIF
 \ENDFOR
-
 \RETURN No counterfactual explanation found
 \end{algorithmic}
 \end{algorithm}
-\vspace{1em}
 
-This method provides a more abstract yet powerful mechanism for generating counterfactuals, as it operates on high-level learned features. The use of dataset-informed median values ensures semantic consistency, while early stopping improves efficiency. Interpretability is further enhanced by generating visualizations such as LIME importance bar plots and masked feature maps, and effectiveness and performance comparasion with other masking methods are discussed in the \cref{sec:masking_eval}.
-
+This method offers a conceptually powerful framework for counterfactual generation. By perturbing high-level latent features instead of raw pixels, it ensures more interpretable and semantically grounded explanations. The use of statistical priors and early stopping improves both plausibility and computational efficiency. Comparative results and metrics for this method are discussed in Section~\ref{sec:masking_eval}.
 
 
 
+\clearpage
 
 \subsection{LIME-Guided Latent Feature Masking using NUN} \label{lime_with_NUN}
 
@@ -777,6 +818,14 @@ Given an input image \( x \), we encode it into a latent vector \( z \) using a 
 
 This NUN latent vector represents a semantically similar example that yields a different classification, and thus serves as a candidate for counterfactual explanation generation.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.55\textwidth]{img/masking/lime_on_latent_nun/NUN_method.drawio.png}
+    \caption[Concept of LIME with NUN feature transfer]{%
+Illustration of the proposed method. Important latent features (as determined by LIME) are transferred from the NUN to the input in order of decreasing importance until the classifier's prediction changes.}
+    \label{fig:nun_lime_concept}
+\end{figure}
+
 To prioritize the most relevant feature changes, we apply the \textit{LIME Tabular Explainer}~\cite{Ribeiro2018} to the NUN vector \( \hat{z} \). LIME generates a local surrogate model that assigns importance weights to each latent feature, resulting in an ordered list:
 
 \[
@@ -785,43 +834,40 @@ To prioritize the most relevant feature changes, we apply the \textit{LIME Tabul
 
 These weights reflect how much each latent feature contributes to the predicted class of the NUN. We use this ranking to iteratively transfer features from \( \hat{z} \) to the query vector that is input image vector\( z \).
 
-Following the LIME importance order, each dimension is replaced via \( z[i_k] \leftarrow \hat{z}[i_k] \), and the modified latent vector \( z' \) is reconstructed into an image \( x' = D(z') \). The reconstructed image is re-encoded and re-classified to determine whether a class change has occurred. This process continues until the prediction flips, identifying a minimal set of latent features required to finding a counterfactual explanation. The complete procedure is summarized in Algorithm~\ref{alg:nun_lime} and the workflow is is shown in Figure~\ref{fig:nun_lime}
-
-\begin{figure}[htbp]
+\begin{figure}[h]
     \centering
-    \includegraphics[width=0.55\textwidth]{img/masking/lime_on_latent_nun/NUN_method.drawio.png}
-    \caption{Illustration of the proposed method. Important latent features (as determined by LIME) are transferred from the NUN to the input in order of decreasing importance until the classifier's prediction changes.}
-    \label{fig:nun_lime_workflow}
-\end{figure}
-
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.95\textwidth]{img/masking/lime_on_latent_nun/lime_on_latent_featuring_using_NUN.png}
-    \caption{
-    Workflow of the LIME-Guided Latent Feature Masking using Nearest Unlike Neighbor (NUN). 
-    Step 1: The query image is encoded into a 128-dimensional latent vector using the VAE encoder and classified to obtain the original prediction (\texttt{STOP}).  
-    Step 2: A latent vector from the test set with a different class prediction (NUN) is selected based on Euclidean proximity. LIME is applied to the NUN to rank the most influential latent features contributing to its class. These top-k features are iteratively transferred from the NUN to the query latent vector.  
-    Step 3: After each replacement, the latent vector is decoded to an image, re-encoded, and re-classified. If the prediction changes (e.g., to \texttt{GO}), the replaced features are considered causally decisive, and the outcome is recorded as a counterfactual explanation.
-    }
-    \label{fig:nun_lime_workflow}
-\end{figure}
-
-
-An illustration of this feature transfer mechanism is shown in Figure~\ref{fig:nun_lime}. The left column depicts the latent features of the input image, while the right column represents the features of its NUN. LIME-assigned importance is indicated through color-coded bars. Features with higher importance are prioritized during transfer from the NUN to the query. Arrows between the two vectors highlight the flow of values during the masking process.
-
-
-\begin{figure}
-    \centering
-    \includegraphics[width=1\linewidth]{img//masking//lime_on_latent_nun/town7_000695.png_side_by_side.png}
-    \caption{
-    This is Visual Comparison of LIME guided Latent feature masking using Nearest Unlike Neighbor(NUN) with respect to input image of my dataset. LEFT: Example of the query image which is first classified as STOP. NUN is derived from a semantically similar image (middle), but classified as GO. Right: The reconstructed image where counterfactual explanation is found.
-    }
+    \includegraphics[width=\linewidth]{img//masking//lime_on_latent_nun/town7_000695.png_side_by_side.png}
+    \caption[Example of LIME-NUN counterfactual generation]{%
+Visual comparison of LIME-guided latent feature masking using Nearest Unlike Neighbor (NUN). 
+Left: Query image originally classified as \texttt{STOP}. 
+Middle: Its nearest unlike neighbor classified as \texttt{GO}. 
+Right: Reconstructed counterfactual image where the prediction flips to \texttt{GO}.}
     \label{fig:nun_cf_side_by_side}
 \end{figure}
 
 
-\begin{algorithm}[htbp]
+Following the LIME importance order, each dimension is replaced via \( z[i_k] \leftarrow \hat{z}[i_k] \), and the modified latent vector \( z' \) is reconstructed into an image \( x' = D(z') \). The reconstructed image is re-encoded and re-classified to determine whether a class change has occurred. This process continues until the prediction flips, identifying a minimal set of latent features required to finding a counterfactual explanation. The complete procedure is summarized in Algorithm~\ref{alg:nun_lime} and the workflow is is shown in Figure~\ref{fig:nun_lime_workflow}
+
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.95\textwidth]{img/masking/lime_on_latent_nun/lime_on_latent_featuring_using_NUN.png}
+    \caption[Workflow of LIME-guided latent masking with NUN]{%
+Workflow of the LIME-Guided Latent Feature Masking using Nearest Unlike Neighbor (NUN).  
+Step 1: The query image is encoded into a 128-dimensional latent vector using the VAE encoder and classified to obtain the original prediction (\texttt{STOP}).  
+Step 2: A latent vector from the test set with a different class prediction (NUN) is selected based on Euclidean proximity. LIME is applied to the NUN to rank the most influential latent features. These top-$k$ features are iteratively transferred from the NUN to the query latent vector.  
+Step 3: After each replacement, the vector is decoded, re-encoded, and re-classified. If the prediction changes (e.g., to \texttt{GO}), the change is recorded as a counterfactual explanation.}
+    \label{fig:nun_lime_workflow}
+\end{figure}
+
+
+
+
+An illustration of this feature transfer mechanism is shown in Figure~\ref{fig:nun_lime_concept}. The left column depicts the latent features of the input image, while the right column represents the features of its NUN. LIME-assigned importance is indicated through color-coded bars. Features with higher importance are prioritized during transfer from the NUN to the query. Arrows between the two vectors highlight the flow of values during the masking process.
+
+
+\begin{algorithm}[h]
 \caption{LIME-Based Masking on Latent Features using NUN}
 \label{alg:nun_lime}
 \begin{algorithmic}[1]
@@ -844,8 +890,8 @@ An illustration of this feature transfer mechanism is shown in Figure~\ref{fig:n
     \ENDIF
 \ENDFOR
 
-\STATE $\text{importance} \leftarrow \text{LIME}(z_{\text{NUN}}, C)$
-\STATE $\mathcal{F} \leftarrow \text{SortDescendingByImportance}(\text{importance})$
+\STATE $importance \leftarrow \text{LIME}(\hat{z}, C)$ \hfill \textit{// Explain NUN's classification}
+\STATE $\mathcal{F} \leftarrow \text{AFOrderLIME}(\hat{z})$ \hfill \textit{// Sort features by decreasing $|w_i|$}
 \STATE $z_{\text{mod}} \leftarrow z$, $k \leftarrow 0$
 
 \FORALL{$i \in \mathcal{F}$}
@@ -866,10 +912,3 @@ An illustration of this feature transfer mechanism is shown in Figure~\ref{fig:n
 
 
 This approach leverages LIME’s interpretability and the semantic richness of the latent space to generate actionable counterfactuals. It ensures minimal intervention while maintaining high visual fidelity, and directly aligns with the counterfactual generation principles outlined by Wijekoon et al.~\cite{WijekoonWNMPC21}. The corresponding results on this method and comparing the effectiveness to other methods are detailed in \cref{sec:masking_eval}.
-
-
-
-
-
-
-

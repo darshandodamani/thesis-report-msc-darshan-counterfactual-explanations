@@ -1,102 +1,84 @@
-This thesis presented a comprehensive framework for generating counterfactual explanations (CEs) in image-based autonomous driving scenarios using deep generative models and post-hoc interpretability techniques. The proposed methodology integrates Variational Autoencoders (VAEs) with various spatial and semantic masking strategies to identify minimal yet effective input perturbations that alter a model’s classification decision. Through systematic implementation, evaluation, and human-centric validation, this work contributes toward advancing the transparency and trustworthiness of AI-driven decision systems in safety-critical domains such as autonomous driving.
+This thesis presented a unified framework for generating interpretable, high-fidelity counterfactual explanations (CEs) for autonomous driving decisions using deep generative models. By leveraging a Variational Autoencoder (VAE) architecture trained on high-dimensional RGB scenes from the CARLA simulator, the proposed system aimed to uncover minimal, semantically meaningful changes that influence model predictions, thereby improving transparency and trust in safety-critical AI applications.
 
-\section{Summary of Contributions}
-The main contributions of this thesis can be summarized as follows:
-
-\subsection{Generative Backbone via VAE}
-
-In this thesis a deep convolutional Variational Autoencoder (VAE) tailored to high-dimensional, RGB image data from complex urban driving environments was developed. The architecture, consisting of a structured latent space of 128 dimensions, was optimized using a composite loss function combining log-cosh reconstruction loss and KL divergence with weight annealing. The VAE demonstrated strong reconstruction fidelity, confirmed through quantitative metrics (e.g., SSIM, PSNR), as well as qualitative visual assessments.
-
-Notably, the VAE was trained in an unsupervised manner without class labels, yet the resulting latent space naturally exhibited semantic structure evidenced by class-wise centroid distances, PCA variance analysis, and silhouette score analysis. These properties make the learned latent representations ideal for downstream classification and explanation tasks.
-
-\subsection{Latent-Space-Based Classification}
-We trained multiple classifiers on the VAE-generated latent features, including Logistic Regression, K-Nearest Neighbors (KNN), Random Forest, Support Vector Machine (SVM), and a Neural Network (MLP). The neural classifier (MLP) achieved the best overall performance, with an accuracy of 89\% and a macro F1-score of 0.89, demonstrating its ability to leverage the non-linear structure of the latent space.
-
-All traditional models achieved reasonably high classification scores (>80\%), validating the effectiveness of the latent representations for downstream prediction. The consistent underperformance on the GO class highlighted the complexity and visual ambiguity of certain driving scenes, suggesting directions for further contextual modeling.
-
-\subsection{Development of Multiple Counterfactual Explanation Methods}
-
-A key novelty of this work is the design and implementation of multiple counterfactual explanation techniques, categorized by their perturbation domain:
-
-\subsubsection{Image Space Masking}
-\begin{enumerate}
-    \item \textbf{Grid-Based Masking:} Offers localized occlusion through fine and coarse spatial grids. Demonstrated high coverage with minimal compute time.
-    \item \textbf{LIME on Image:} Applies LIME to pixel regions. Effective but less robust to over-masking and resulted in noisy reconstructions.
-    \item \textbf{Object Detection-Based Masking:} Relies on YOLOv5 to identify and mask objects. However, poor object detection results on the dataset led to minimal success.
-\end{enumerate}
-
-\subsubsection{Latent Space Masking}
-\begin{enumerate}
-    \item \textbf{LIME on Latent Features:} Replaces highly weighted latent dimensions with median values. Offers an interpretable but limited performance due to non-optimal feature selection.
-    \item \textbf{LIME on Latent using Nearest Unlike Neighbor (NUN):} Among all the this most effective method, which transfers LIME-ranked features from a semantically close, differently classified example (NUN). It provided the highest validity (97.44\%) and visual coherence in the counterfactuals generated.
-\end{enumerate}
-
-Each method adhered to a unified pipeline involving image encoding, classification, masking, VAE-based reconstruction, and re-classification, ensuring the plausibility of counterfactuals via data manifold adherence.
-
-\section{Comprehensive Evaluation Strategy}
-
-We defined and employed a rigorous and multi-faceted evaluation strategy to assess the quality, realism, efficiency, sparisity, and proximity of counterfactual explanations. These metrics span:
-\begin{enumerate}
-    \item  \textbf{Effectiveness Metrics:} Validity (successful class flips), Per-Class Success Rate, Sparsity (minimality of edits), and Method Overlap (agreement across techniques).
-    \item \textbf{Efficiency Metrics:} Average runtime per explanation and total computational time, assessing scalability for real-world use.
-    \item \textbf{Visual and Semantic Quality:} Reconstructed counterfactual images were analyzed qualitatively for semantic plausibility, visual realism, and localized change.
-\end{enumerate}
-
-\textbf{Latent vs Image-Space Metrics Interpretation:}
-While sparsity and proximity are widely used for evaluating counterfactual explanations, these experiments revealed that their reliability significantly depends on the perturbation domain. In latent-space masking, both metrics are consistent and meaningful due to the continuous, structured nature of the VAE’s latent space. However, in image-space masking (e.g., Grid and LIME on Image), sparsity fails to capture semantic relevance of masked regions, and proximity becomes less interpretable due to artifacts introduced during decoding of out-of-distribution masked inputs. Therefore, although reported for completeness across all methods, we advocate for latent-based approaches when interpretability and metric consistency are critical.
+The study was guided by four core research questions, each targeting a distinct component of the explainability pipeline:
 
 
+\section{Answering RQ1: VAE and Classifier Implementation}
+
+To evaluate whether a VAE can encode and reconstruct semantically rich driving scenes in a compact latent space, designed a deep convolutional encoder-decoder with KL annealing and flexible loss functions. Experimental results showed that the learned 128-dimensional latent representations retained essential driving semantics. These representations supported accurate downstream classification tasks using multiple models (MLP, SVM, RF, KNN, Logistic Regression), with the MLP and SVM classifiers achieving up to 89\% test accuracy on a 4-class problem. PCA and t-SNE projections confirmed moderate latent space clustering despite the VAE being trained in an unsupervised manner. Thus, the VAE effectively captured meaningful structure in high-dimensional input data, validating RQ1.
+
+\section{Answering RQ2: Loss Function Optimization}
+
+To investigate how reconstruction losses affect model performance, two VAE variants were trained using MSE and Log-Cosh losses. Comprehensive quantitative and qualitative analyses (including PSNR, SSIM, reconstruction visuals, and loss convergence) demonstrated that Log-Cosh consistently outperformed MSE across all metrics. The Log-Cosh variant achieved better perceptual fidelity (SSIM = 0.864, PSNR = 31.04 dB), smoother loss convergence, and superior image quality. These findings strongly support the adoption of robust loss functions like Log-Cosh for generative modeling in autonomous systems, thereby addressing RQ2.
+
+\section{Answering RQ3: Comparative Evaluation of Masking-Based Counterfactuals}
+
+Five masking-based CE generation strategies were proposed and evaluated in which three operating in image space (Grid-Based, Object Detection, LIME on Image) and two in latent space (LIME on Latent Features, LIME on Latent Features using NUN). A unified pipeline was developed to ensure methodological consistency across all techniques.
+
+Evaluation across multiple dimensions counterfactual explanations coverage, failure rate, runtime, proximity, sparsity, and method overlap—revealed that:
+
+\begin{itemize}
+    \item \textbf{LIME on Latent NUN} was the most effective, achieving high CE coverage (97.44\%), class-wise balance, and realistic counterfactuals, albeit with the highest runtime.
+    \item \textbf{Grid-Based Masking} emerged as a strong, fast baseline (coverage = 98.89\%, runtime = 13 min) with excellent interpretability and semantic targeting.
+    \item \textbf{LIME on Image} produced visually noisy outputs with low interpretability and high distortion due to aggressive masking of critical regions.
+    \item \textbf{LIME on Latent (Median)} generated the sparsest and most localized perturbations (avg. 2.3 features), but had poor validity and coverage.
+    \item \textbf{Object Detection Masking} performed poorly due to low detection rates in the dataset.
+\end{itemize}
+
+These results demonstrate that counterfactual quality depends not only on prediction change but also on visual fidelity, minimality, and semantic plausibility especially in high-stakes domains like autonomous driving. The LIME on Latent NUN method best balances these trade-offs, thereby answering RQ3.
+
+\section{Answering RQ4: Human-Centered Evaluation of Explanation Preferences}
+
+To evaluate real-world preference and interpretability, a web-based user study was conducted with four masking-based counterfactual methods. Participants rated CEs on three dimensions: interpretability, plausibility, and visual coherence.
+
+Results showed that:
+
+\begin{itemize}
+    \item \textbf{Grid-Based Masking} was rated highest in interpretability (4.32) and visual coherence (4.16), praised for structured, minimal changes.
+    \item \textbf{LIME on Latent NUN} scored highest in plausibility (3.96) and offered the best balance between realism and decision change.
+    \item \textbf{LIME on Image} consistently received the lowest ratings across all dimensions, due to unnatural reconstructions and over-masking.
+\end{itemize}
+
+Qualitative user feedback validated the metrics: participants highlighted realism and minimalism as key qualities for understandable counterfactuals. These findings demonstrate the importance of aligning algorithmic explanations with human intuition, thereby answering RQ4.
+
+\section{Thesis Contributions}
+
+The main contributions of this thesis are:
+\begin{itemize}
+    \item A unified, modular framework for generating and evaluating image-based counterfactuals in autonomous driving.
+    \item A comparative study of five masking strategies, with rigorous evaluation using both algorithmic metrics and human preferences.
+    \item An effective integration of LIME and NUN in latent space, producing high-quality, semantically grounded counterfactuals.
+    \item A web-based tool and human-centered evaluation protocol for future research in explainability.
+\end{itemize}
 
 
-\section{Human-Centered Evaluation for Interpretability (RQ4)}
-To ground the quantitative findings in user perception, we conducted a human study using a web-based interface. Participants evaluated counterfactuals based on interpretability, plausibility, and visual coherence. The LIME on Latent NUN method consistently received the highest average scores across all three dimensions. Qualitative feedback highlighted its ability to generate realistic, minimal edits that intuitively explained prediction changes.
-
-Of all pitched approaches, LIME on Latent Features using the Nearest Unlike Neighbor (NUN), achieved the overall top average scores along all three dimensions. Participants rated its explanations as realistic, semantically faithful and minimally edited qualities that were consistent with human intuition. In sharp contrast, in  LIME on images received the lowest ratings, with critics pointing to blurry reconstructions and loss of original contextuality.
-
-The findings of this user study confirmed the algorithmic metrics but also highlighted that interpretable AI deployments in safety-critical areas must provide intuitive, trustworthy, and human-aligned explanations. The results highlight that high technical performance alone is not enough; model explanations should also be understandable and convincing for end-users, especially in autonomous driving applications where accountability and trust are key.
-
-\section{Insights}
-Through the extensive implementation and evaluation of counterfactual explanation methods, several key insights emerged that inform both the design of future explainability systems and the deployment of trustworthy AI in safety-critical settings.
-\begin{enumerate}
-    \item \textbf{Variational Autoencoders as Generative Backbones:} 
-    The use of VAEs demonstrated that deep generative models can reliably encode complex, high-dimensional visual scenes into compact and semantically meaningful latent spaces. Importantly, this encoding process was entirely unsupervised, yet the resulting representations were found to be well-suited for downstream classification and intervention tasks. This highlights the VAE's capacity to serve as a foundation for post-hoc interpretability without relying on task-specific labels during training.
-
-    \item \textbf{Latent Space Manipulation Enhances Interpretability and Scalability:} 
-    Counterfactual generation in latent space particularly using LIME-guided interventions—offered significant advantages over traditional pixel-space masking. These methods allowed for more controlled, minimal, and semantically coherent edits, leading to explanations that were not only effective in altering classifier predictions but also more interpretable to human observers. Furthermore, latent interventions scale better to high-dimensional data where pixel-level editing becomes visually disruptive or computationally intractable.
-
-    \item \textbf{Limitations of Traditional Visual Quality Metrics:} 
-    The study revealed a mismatch between standard visual quality metrics (e.g., SSIM, PSNR) and human perceptions of counterfactual quality. Some reconstructions with high PSNR still appeared unrealistic or confusing to users, while others rated poorly on SSIM were intuitively judged as informative. This emphasizes the necessity of human-in-the-loop evaluation frameworks when assessing explainability techniques, especially in visually complex domains.
-
-    \item \textbf{Simple, Well-Designed Baselines Can Be Surprisingly Competitive:} 
-    While LIME-based latent masking with NUN outperformed most techniques in terms of validity and human preference, the grid-based masking method emerged as a highly competitive baseline. Despite its simplicity, grid masking provided efficient, interpretable, and effective explanations across multiple scenarios especially in multi-class settings. This finding reinforces the importance of robust, interpretable baselines in explainability research.
-
-    \item \textbf{Human Preferences Prioritize Minimalism and Coherence:} 
-    Feedback from user studies revealed that participants preferred counterfactuals which altered only a small part of the image while preserving the overall scene structure. Excessive masking (as seen in image-based LIME) or poorly reconstructed visuals were rated poorly despite their ability to flip predictions. This highlights the importance of sparse, plausible, and minimally invasive edits for human-aligned counterfactual generation.
-\end{enumerate}
+\subsection{From Real-World Motivation to Practical Impact}
+This work was motivated by the critical need for transparency in AI-based decision-making in autonomous vehicles explained in introduction (ref ~\ref{Introduction}). Real-world tragedies such as the fatal incident involving an autonomous Uber in Arizona~\autocite{marshall2019uber}, where an object was misclassified as a harmless obstacle highlight the severe consequences of unexplainable model failures. In such high-stakes scenarios, it is not enough for the system to make a prediction, it must also provide insight into why that prediction was made. The proposed framework addresses this gap by enabling counterfactual explanations that expose the minimal, causally important changes in input responsible for altering the model's decision. By reconstructing semantically coherent and visually interpretable explanations, this system offers a path toward greater transparency, accountability, and ultimately safer deployment of AI in autonomous systems.
 
 
-\section{Limitations}
-Despite the significant contributions, the proposed framework has the following limitations:
-\begin{enumerate}
-    \item Object Detection Dependency: The failure of object detection-based masking was primarily due to poor YOLOv5 generalization on the CARLA-generated dataset.
-    \item Latent Representation Overlap: Certain classes (e.g., GO) showed overlapping latent encodings, limiting classification and CE effectiveness.
-    \item Static Thresholding in LIME: Some LIME-based methods depended on fixed thresholds or importance ranks, which may not generalize across datasets or tasks.
-    \item Computational Cost: The LIME on Latent NUN method, while effective, is computationally expensive, with a runtime of over 263 minutes for full dataset processing.
-\end{enumerate}
 
 
-\section{Future Scope}
-This work opens several exciting directions for future research:
-\begin{enumerate}
-    \item \textbf{More Advanced Generative Models:} Future work can explore more expressive generative models like $beta$-VAEs, Vector Quantized VAEs (VQ-VAE), or diffusion models. These models can offer improved latent disentanglement and reconstruction quality, enabling better counterfactual generation fidelity.
-    \item \textbf{Adaptive Feature Selection:} Instead of using fixed median replacements or static LIME weights, dynamic and adaptive strategies can be explored for latent manipulation—such as reinforcement learning or causal discovery algorithms to identify actionable and plausible interventions.
-    \item \textbf{Real-Time Counterfactuals:} Optimizing the pipeline for real-time or near-real-time deployment in autonomous driving systems could enable interactive debugging and decision support in safety-critical scenarios.
+\section{Limitations} \label{sec:limitations}
+Despite its contributions, this thesis has several limitations that merit consideration. First, all experiments were conducted using the CARLA simulator, which although diverse and realistic in structure may not capture the full variability and complexity of real-world urban driving environments. Consequently, generalizability to real-world datasets remains untested. Second, the object detection-based masking method underperformed primarily due to YOLOv5’s limited generalization on CARLA-generated scenes. Its inability to reliably detect key objects like traffic signs or pedestrians often resulted in incomplete or failed counterfactual explanations.
 
-    \item \textbf{Scalable Human Evaluation Framework:} Developing standardized human evaluation protocols and open datasets with known ground-truth counterfactuals would help benchmark future work in this space more effectively.
-    \item \textbf{Deployment in Explainable AV Pipelines:} Finally, the CE pipeline can be integrated into AV perception or decision modules as an explainability layer—helping engineers interpret edge-case failures or bias-related issues in model behavior.
-\end{enumerate}
+Third, while the VAE succeeded in compressing visual scenes into semantically useful latent vectors, certain classes particularly \texttt{GO} exhibited significant overlap in the latent space. This latent entanglement posed challenges for both classification and counterfactual generation. Additionally, the classifiers used in this study were trained exclusively on VAE-generated latent representations. Incorporating ensemble learning or multimodal inputs (e.g., raw images, or object metadata) could improve overall robustness and interpretability.
+
+Furthermore, evaluation metrics like proximity and sparsity while well-defined in the structured latent space—were less meaningful in image-space interventions. Due to the artifacts introduced during re-encoding of masked images, these metrics may not reliably reflect the true semantic or perceptual closeness between original and counterfactual samples. Another limitation stems from the static thresholding applied in LIME-based methods. Selecting a fixed number of top-$k$ influential features or using dataset-level medians may not generalize across different tasks or datasets, limiting adaptability. 
+
+Finally, the most effective counterfactual method—LIME-guided latent feature masking using Nearest Unlike Neighbor (NUN) was also the most computationally expensive. Its high runtime (over 263 minutes for a full dataset) poses a constraint for real-time or large-scale deployment. These limitations open several avenues for improvement, which are discussed in the following section.
+
+\section{Future Scope} \label{sec:future_scope}
+
+This thesis opens several promising directions for future research in explainable artificial intelligence for autonomous driving systems. First, more advanced generative models such as $\beta$-VAEs, Vector Quantized VAEs (VQ-VAEs), GAN, or diffusion models can be explored to improve latent disentanglement and image reconstruction quality. These models have shown superior performance in preserving semantic structure and could enhance the plausibility and precision of generated counterfactuals. Additionally, replacing LIME with SHAP (SHapley Additive exPlanations) may provide more theoretically sound and stable feature attributions. Unlike LIME, SHAP offers axiomatic guarantees such as local accuracy and consistency, which could address the limitations associated with static thresholding and importance ranking.
+
+A particularly promising avenue is the use of Conditional VAEs (CVAEs), where supervision via class labels during training would help organize the latent space around discrete class manifolds. This would support more targeted manipulations for counterfactual generation. Moreover, further structuring of the latent space can be pursued through architectural refinements such as tuning KL annealing schedules, dropout configurations, or non-linear activations to improve both classification separability and interpretability.
+
+Real-world applicability remains a key frontier. Future work should extend this framework to benchmark datasets such as Cityscapes, KITTI, or nuScenes, and incorporate multimodal sensor inputs like LiDAR and radar. This integration would test the generalizability of the method beyond simulation and towards production grade perception pipelines. Additionally, adaptive feature selection techniques including reinforcement learning, causal inference, or dynamically thresholded LIME/SHAP could lead to more semantically aligned and minimal counterfactuals.
+
+Another major direction involves real-time deployment. Optimizing the counterfactual pipeline for latency and scalability could support interactive debugging and decision support in safety-critical autonomous driving scenarios. Lastly, establishing scalable human evaluation frameworks and open-source benchmarks with labeled counterfactual ground truths would contribute to standardization in this emerging field. Deployment of such explainability modules into perception and decision-making stacks of autonomous vehicles could support transparency, edge-case diagnostics, and regulatory compliance, ensuring that AI-driven systems remain both accountable and trustworthy in complex, real-world environments.
 
 
-To conclude, this thesis proposed a modular, interpretable, and human-aligned framework for generating counterfactual explanations using deep generative models in autonomous driving. My results validated through quantitative analysis and human studies demonstrate that combining latent feature reasoning with generative reconstruction and post-hoc attribution offers a robust pathway for actionable and trustworthy model explanations.
 
-As autonomous systems become more prevalent, particularly in the context of real-world applications, such explainability frameworks (in conjunction with publicly accessible datasets) will be paramount in promoting transparency, accountability, and public trust in an AI’s decisions.
+To conclude, this thesis proposed a modular, interpretable, and human-aligned framework for generating counterfactual explanations using deep generative models in autonomous driving. Results validated across quantitative metrics and human studies demonstrated that combining latent feature attribution with VAE-based reconstructions provides a reliable, actionable pathway for trustworthy AI explanations.
+
+As autonomous vehicles move toward real-world deployment, such counterfactual frameworks especially, when paired with open datasets and user-centric evaluations will be crucial in establishing transparency, accountability, and public trust in machine decision-making.

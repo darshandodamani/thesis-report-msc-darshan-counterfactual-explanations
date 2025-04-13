@@ -2,7 +2,7 @@ As introduced in \cref{Introduction}, this thesis explores the generation of cou
 
 This chapter presents the evaluation strategy and experimental findings, structured according to the central research questions (RQs). For each RQ, the evaluation criteria are outlined and later expanded in dedicated result sections.
 
-\textbf{RQ1:} \textit{How can deep generative models be implemented to effectively encode and reconstruct images of high-dimensional driving scenes for interpretable and compact representation learning in autonomous driving systems?}
+\textbf{RQ1:} \textit{How can deep generative models be implemented to effectively encode and reconstruct high-dimensional RGB input images of driving scenes for compact and interpretable representation learning in autonomous driving systems?}
 
 \vspace{-1em}
 
@@ -64,124 +64,185 @@ The Variational Autoencoder (VAE) forms the backbone of this thesis. It serves d
 
 To ensure robustness, various architectural configurations and hyperparameter settings were explored, including latent dimensionality, convolutional depth, and KL divergence annealing schedules. One major focus was the choice of reconstruction loss function, which has a significant effect on the quality of output and the stability of training. Two variants were trained. One using traditional Mean Squared Error (MSE) and the other using Log-Cosh, a smoother, outlier-robust alternative motivated by prior work by Chen et al.,~\cite{chen2019log}. This section presents the training dynamics, comparative results between the two losses, and the final analysis of latent space quality.
 
-\subsection{Training Performance and Loss Analysis} \label{subsubsec:vae_training_loss}
+\subsubsection{Latent Space Selection and Architectural Rationale} \label{sec:latent-space-selection}
 
-Two VAE variants were trained for 200 epochs each, differing only in their reconstruction loss: Mean Squared Error (MSE) and Log-Cosh. Throughout training, we monitored several key metrics:
-
+An empirical comparison of latent dimensionalities 64, and 128 was conducted to determine the optimal balance between reconstruction fidelity, training stability, and latent representation capacity. All other architectural and training parameters were held constant for a fair comparison.
 \begin{itemize}
-    \item \textbf{Total Loss:} Sum of reconstruction and KL divergence losses.
-    \item \textbf{Reconstruction Loss:} Measures pixel-wise reconstruction error.
-    \item \textbf{KL Divergence:} Reflects the alignment of the latent space distribution with a unit Gaussian prior.
-    \item \textbf{Validation Pixel Accuracy:} Measures how accurately the reconstructed image matches the original at pixel level.
-    \item \textbf{PSNR (Peak Signal-to-Noise Ratio):} Evaluates perceptual reconstruction quality.
+    \item \textbf{64-Dimensional:} Produced significantly blurry reconstructions refer figure~\ref{fig:vae64_recon}, particularly around edges and textures. While training remained stable, the compressed latent space struggled to retain sufficient visual detail.
+    
+    \item \textbf{128-Dimensional:} Achieved the best balance — sharp reconstructions refer figure~\ref{fig:vae128_recon}, stable training, and latent vectors that, when visualized using PCA and t-SNE, showed class-specific clustering post hoc see figure~\ref{fig:latent_space_visualizations}.
 \end{itemize}
-
-\textbf{Log-Cosh Variant (Figures \ref{fig:logcosh_kl_loss} to \ref{fig:logcosh_psnr})}
-
-\begin{itemize}
-    \item \textbf{KL Divergence:} As shown in Figure~\ref{fig:logcosh_kl_loss}, KL loss rapidly decreased in the early epochs and gradually stabilized, indicating that the annealing schedule successfully encouraged disentangled latent features.
-    \item \textbf{Reconstruction \& Total Loss:} Both training and validation losses (Figures~\ref{fig:logcosh_recon_loss} and \ref{fig:logcosh_total_loss}) show a smooth, monotonic decrease, suggesting stable convergence.
-    \item \textbf{Pixel Accuracy \& PSNR:} Validation pixel accuracy steadily increased, reaching 0.97 (Figure~\ref{fig:logcosh_val_acc}), while PSNR improved consistently to 31.4 dB (Figure~\ref{fig:logcosh_psnr}).
-\end{itemize}
-
-A qualitative comparison of the reconstructed image at epoch 200 (Figure~\ref{fig:logcosh_epoch200}) shows that the VAE preserves semantic structure and texture remarkably well.
 
 \begin{figure}[htbp]
     \centering
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_kl_loss.png}
-        \caption{KL divergence over epochs for VAE trained with Log-Cosh loss.}
-        \label{fig:logcosh_kl_loss}
+    \begin{subfigure}[b]{0.6\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/epoch_200.png}
+        \caption{VAE reconstruction with 64-D latent space}
+        \label{fig:vae64_recon}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_recon_loss.png}
-        \caption{Reconstruction loss over epochs (Log-Cosh).}
-        \label{fig:logcosh_recon_loss}
-    \end{subfigure}
-    
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_total_loss.png}
-        \caption{Total loss over epochs (Log-Cosh).}
-        \label{fig:logcosh_total_loss}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_val_accuracy.png}
-        \caption{Validation pixel accuracy across epochs (Log-Cosh).}
-        \label{fig:logcosh_val_acc}
-    \end{subfigure}
-    
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_val_psnr.png}
-        \caption{Validation PSNR trajectory for Log-Cosh model.}
-        \label{fig:logcosh_psnr}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.45\textwidth}
+    \begin{subfigure}[b]{0.6\textwidth}
         \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/reconstructions/epoch_200.png}
-        \caption{Original vs. Reconstructed image at epoch 200 (Log-Cosh).}
-        \label{fig:logcosh_epoch200}
+        \caption{VAE reconstruction with 128-D latent space}
+        \label{fig:vae128_recon}
     \end{subfigure}
-    
-    \caption{Training Performance and Loss Analysis for Log-Cosh Variant: Detailed analysis of the VAE's performance using the Log-Cosh loss function, highlighting key metrics and qualitative results.}
-    \label{fig:logcosh_analysis}
+
+    \caption[Reconstruction comparison for different VAE latent dimensions]{%
+Qualitative comparison of reconstructed RGB images using different latent dimensionalities. The 64-dimensional model shows noticeable blurring and structural loss, while the 128-dimensional variant preserves edges and semantic layout more effectively.}
+    \label{fig:vae_latent_qual_comparison}
+\end{figure}
+
+\begin{table}[!h]
+    \centering
+    \caption{Comparison of VAE latent dimensionalities.}
+    \label{tab:vae-latent-comparison}
+    \begin{tabular}{|c|p{4cm}|p{3.5cm}|p{4cm}|}
+        \hline
+        \textbf{Latent Dim} & \textbf{Reconstruction Quality} & \textbf{Training Stability} & \textbf{Latent Structure (t-SNE)} \\
+        \hline
+        64 & Blurry edges, missing details & Stable & Weak structure \\
+        128 & Clear, high-fidelity images & Stable & Moderate clustering \\
+        \hline
+    \end{tabular}
+\end{table}
+
+The final VAE architecture design motivated from Idrees Shaikh’s CARLA DRL project\footnote{\url{https://github.com/idreesshaikh/Autonomous-Driving-in-Carla-using-Deep-Reinforcement-Learning}}, which originally employed semantic segmentation and a 64-dimensional latent space. Since this thesis works directly with raw RGB images, preserving color and fine-grained spatial detail required a richer representation. Accordingly, the latent dimension was increased to 128, and the architecture was fine-tuned through multiple iterations to ensure consistent convergence and high-quality reconstructions.
+
+\clearpage
+
+
+
+\subsection{Training Performance and Loss Analysis} \label{subsubsec:vae_training_loss}
+
+Two VAE variants were trained for 200 epochs each (see hyperparameters in \cref{subsec:hyperparameter_config}), differing only in their reconstruction loss. Mean Squared Error (MSE) and Log-Cosh error. Throughout training, several key performance metrics were monitored to evaluate convergence, reconstruction quality, and regularization behavior:
+
+
+\begin{itemize}
+    \item \textbf{KL Divergence:} Reflects the alignment of the learned latent distribution with the unit Gaussian prior.
+    \item \textbf{Reconstruction Loss:} Measures pixel-wise reconstruction error between the original and generated image.
+    \item \textbf{Total Loss:} Sum of reconstruction loss and KL divergence (with an annealing weight).
+    \item \textbf{Validation SSIM:} Structural similarity measure capturing image perceptual quality.
+    \item \textbf{PSNR:} Peak Signal-to-Noise Ratio, another indicator of perceptual reconstruction quality.
+    \item \textbf{Pixel Accuracy:} Measures how closely the reconstructed image matches the input at pixel level.
+\end{itemize}
+
+
+
+Figure~\ref{fig:vae_loss_comparison_1} and Figure~\ref{fig:vae_loss_comparison_2} provides a side-by-side comparison of all key metrics for both VAE models trained with Log-Cosh and MSE losses. 
+
+\begin{figure}[p]
+    \centering
+    % --- KL Divergence
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_kl_loss.png}
+        \caption{KL Divergence — Log-Cosh}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_kl_loss.png}
+        \caption{KL Divergence — MSE}
+    \end{subfigure}
+
+    % --- Reconstruction Loss
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_recon_loss.png}
+        \caption{Reconstruction Loss — Log-Cosh}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_recon_loss.png}
+        \caption{Reconstruction Loss — MSE}
+    \end{subfigure}
+
+    % --- Total Loss
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_total_loss.png}
+        \caption{Total Loss — Log-Cosh}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_total_loss.png}
+        \caption{Total Loss — MSE}
+    \end{subfigure}
+
+    \caption[Loss comparison for Log-Cosh and MSE-trained VAEs]{%
+Comparison of KL divergence, reconstruction loss, and total loss across training epochs for VAE models trained with Log-Cosh and MSE losses. The Log-Cosh model shows more stable convergence with better structural recovery.}
+    \label{fig:vae_loss_comparison_1}
 \end{figure}
 
 
+\begin{figure}[p]
+    \centering
+    % --- Pixel Accuracy
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_val_accuracy.png}
+        \caption{Validation Accuracy — Log-Cosh}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_val_accuracy.png}
+        \caption{Validation Accuracy — MSE}
+    \end{subfigure}
 
+    % --- PSNR
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_val_psnr.png}
+        \caption{PSNR — Log-Cosh}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_val_psnr.png}
+        \caption{PSNR — MSE}
+    \end{subfigure}
 
-\subsection{Training Comparison with MSE Loss} \label{subsubsec:vae_mse_loss}
+    % --- SSIM
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/logcosh_val_ssim.png}
+        \caption{SSIM — Log-Cosh}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_val_ssim.png}
+        \caption{SSIM — MSE}
+    \end{subfigure}
 
-The training curves for the MSE-based VAE show similar convergence trends but at a consistently higher loss level across all metrics:
+    \caption[Performance metrics for Log-Cosh vs MSE VAEs]{%
+Evaluation metrics for VAEs trained with Log-Cosh and MSE loss functions. Metrics include validation accuracy, PSNR (Peak Signal-to-Noise Ratio), and SSIM (Structural Similarity Index), showcasing better reconstruction fidelity for the Log-Cosh variant.}
+    \label{fig:vae_loss_comparison_2}
+\end{figure}
+
+\clearpage
+
+The comparative plots in Figure~\ref{fig:vae_loss_comparison_1} and Figure~\ref{fig:vae_loss_comparison_2} clearly demonstrate that the VAE trained with the Log-Cosh loss outperforms its MSE counterpart across all major evaluation criteria:
 
 \begin{itemize}
-    \item \textbf{Total and Reconstruction Loss:} Figures~\ref{fig:mse_total_loss} and \ref{fig:mse_recon_loss} indicate slower and less stable convergence compared to Log-Cosh.
-    \item \textbf{Pixel Accuracy \& PSNR:} Slightly lower final accuracy (~0.969) and PSNR (30.99 dB), as seen in Figures~\ref{fig:mse_val_acc} and \ref{fig:mse_val_psnr}.
+    \item \textbf{KL Divergence:} Both models show stable convergence, but the Log-Cosh variant achieves a marginally lower KL loss by the end of training, indicating more effective regularization of the latent space (Figures~\ref{fig:vae_loss_comparison_1}a and~\ref{fig:vae_loss_comparison_1}b).
+    
+    \item \textbf{Reconstruction and Total Loss:} The Log-Cosh model exhibits faster convergence and lower final loss values, suggesting improved robustness during training (Figures~\ref{fig:vae_loss_comparison_1}c to~\ref{fig:vae_loss_comparison_1}f).
+    
+    \item \textbf{Pixel Accuracy:} As shown in Figures~\ref{fig:vae_loss_comparison_2}a and~\ref{fig:vae_loss_comparison_2}b, the Log-Cosh model consistently yields higher pixel accuracy, peaking at approximately 96.96\%.
+    
+    \item \textbf{PSNR and SSIM:} The perceptual quality of reconstructions is higher with Log-Cosh, achieving 31.04 dB PSNR and 0.864 SSIM (Figures~\ref{fig:vae_loss_comparison_2}c to~\ref{fig:vae_loss_comparison_2}f), compared to 29.44 dB and 0.823 with MSE.
 \end{itemize}
 
-Qualitative Comparison: Figure~\ref{fig:mse_epoch200} shows noticeable blur and loss of fine structure in the reconstructions compared to Log-Cosh.
+Visual inspection further confirms these findings. Figure~\ref{fig:vae_qualitative_comparison} presents side-by-side reconstructions at epoch 200. The Log-Cosh model preserves finer details, textures, and structural integrity, whereas the MSE-based reconstruction exhibits noticeable blurring, particularly around object boundaries, disappearing of the traffic pole and fine features.
 
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_kl_loss.png}
-        \caption{KL divergence over epochs for VAE trained with MSE loss.}
-        \label{fig:mse_kl_loss}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_recon_loss.png}
-        \caption{Reconstruction loss over epochs (MSE).}
-        \label{fig:mse_recon_loss}
-    \end{subfigure}
-    
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_total_loss.png}
-        \caption{Total loss over epochs (MSE).}
-        \label{fig:mse_total_loss}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_val_accuracy.png}
-        \caption{Validation pixel accuracy across epochs (MSE).}
-        \label{fig:mse_val_acc}
-    \end{subfigure}
-    
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/mse_val_psnr.png}
-        \caption{Validation PSNR trajectory for MSE model.}
-        \label{fig:mse_val_psnr}
+        \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_logcosh/reconstructions/epoch_200.png}
+        \caption{Log-Cosh — Epoch 200}
+        \label{fig:logcosh_epoch200}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.45\textwidth}
         \includegraphics[width=\textwidth]{img/vae_results/200_epochs_128_ls_mse/reconstructions/epoch_200.png}
-        \caption{Original vs. Reconstructed image at epoch 200 (MSE).}
+        \caption{MSE — Epoch 200}
         \label{fig:mse_epoch200}
     \end{subfigure}
-    
-    \caption{Training Performance and Loss Analysis for MSE Variant: A comparison of the VAE's performance using MSE loss, highlighting differences in convergence and reconstruction quality compared to Log-Cosh.}
-    \label{fig:mse_analysis}
+    \caption[Qualitative comparison of VAE reconstructions (Log-Cosh vs. MSE)]{%
+Side-by-side qualitative comparison of VAE reconstructions at epoch 200. The Log-Cosh model (left) yields sharper and more semantically consistent outputs than the MSE model (right).}
+    \label{fig:vae_qualitative_comparison}
 \end{figure}
 
 
@@ -190,11 +251,17 @@ Qualitative Comparison: Figure~\ref{fig:mse_epoch200} shows noticeable blur and 
 
 
 
-
+\clearpage
 
 
 \subsection{Quantitative Comparison of Loss Functions (RQ2 Answered)} \label{subsec:vae_quant_comparison}
-To assess the performance of the Variational Autoencoder (VAE), both the Log-Cosh and Mean Squared Error (MSE) loss functions were evaluated across several metrics, namely Total Loss, Reconstruction Loss, KL Divergence, Validation Pixel Accuracy, Peak Signal-to-Noise Ratio (PSNR). 
+To assess the performance of the Variational Autoencoder (VAE), both the Log-Cosh and Mean Squared Error (MSE) loss functions were evaluated across several key metrics: Total Loss, Reconstruction Loss, KL Divergence, Peak Signal-to-Noise Ratio (PSNR), and Structural Similarity Index (SSIM). The Total Loss is computed as the sum of the reconstruction loss (Log-Cosh or MSE) and the weighted Kullback-Leibler (KL) divergence, where the KL term regularizes the latent space and its contribution is gradually increased during training using KL annealing.
+
+\begin{equation}
+\mathcal{L}_{\text{VAE}} = \mathcal{L}_{\text{recon}} + \lambda_{\text{KL}} \cdot \mathcal{L}_{\text{KL}}
+\end{equation}
+
+Here, $\mathcal{L}_{\text{recon}}$ denotes the reconstruction loss (either Log-Cosh or MSE), $\mathcal{L}_{\text{KL}}$ is the KL divergence between the approximate posterior and the standard normal prior, and $\beta$ is a dynamic weight term that increases gradually during training to balance reconstruction fidelity with latent space regularization.
 
 Table~\ref{tab:loss_comparison} presents average values over the final 5 epochs for both variants:
 
@@ -204,48 +271,56 @@ Table~\ref{tab:loss_comparison} presents average values over the final 5 epochs 
         \toprule
         \textbf{Metric} & \textbf{Log-Cosh (Avg)} & \textbf{MSE (Avg)} \\
         \midrule
-        Validation Total Loss & 21.82 & 42.35 \\
-        Validation Reconstruction Loss & 16.49 & 35.84 \\
-        Validation KL Divergence & 268.72 & 327.90 \\
-        Validation Pixel Accuracy & 0.971 & 0.969 \\
-        Validation PSNR (dB) & 31.39 & 30.99 \\
+        Validation Total Loss & 36.13 & 62.21 \\
+        Validation Reconstruction Loss & 30.77 & 55.63 \\
+        Validation KL Divergence & 270.11 & 331.46 \\
+        Validation PSNR (dB) & 29.43 & 28.80 \\
+        Validation SSIM & 0.8230 & 0.8088 \\
         \bottomrule
     \end{tabular}
-    \caption{Comparison of validation metrics for VAE variants (Final 5 Epoch Average)}
+    \caption{Comparison of validation metrics for VAE variants (averaged over final 5 epochs).}
     \label{tab:loss_comparison}
 \end{table}
 
-Additionally, Figures~\ref{fig:val_loss_comparison} and \ref{fig:val_psnr_comparison} provide a side-by-side comparison of Validation Loss and PSNR over all epochs.
-
+Figures~\ref{fig:val_loss_comparison}, \ref{fig:val_psnr_comparison}, and \ref{fig:val_ssim_comparison} provide a visual comparison of how both losses influence model behavior throughout training.
 
 \begin{figure}[h]
     \centering
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/val_loss_comparison.png}
-        \caption{Validation Loss Comparison: Log-Cosh vs. MSE over all epochs.}
-        \label{fig:val_loss_comparison}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/val_psnr_comparison.png}
-        \caption{Validation PSNR Comparison: Log-Cosh vs. MSE over all epochs.}
-        \label{fig:val_psnr_comparison}
-    \end{subfigure}
-    
-    \caption{Quantitative Comparison of Loss Functions: Validation Loss and PSNR for Log-Cosh and MSE variants.}
-    \label{fig:quant_comparison}
+    \includegraphics[width=0.7\textwidth]{img/vae_results/val_loss_comparison.png}
+    \caption{Validation Loss Comparison: Log-Cosh vs. MSE over all epochs.}
+    \label{fig:val_loss_comparison}
 \end{figure}
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/vae_results/val_psnr_comparison.png}
+    \caption{Validation PSNR Comparison: Log-Cosh vs. MSE over all epochs.}
+    \label{fig:val_psnr_comparison}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/vae_results/val_ssim_comparison.png}
+    \caption{Validation SSIM Comparison: Log-Cosh vs. MSE over all epochs.}
+    \label{fig:val_ssim_comparison}
+\end{figure}
 
 From these results:
 
 \begin{itemize}
-    \item The Log-Cosh loss outperformed MSE in terms of both total and reconstruction loss, indicating smoother training and better pixel-wise fidelity.
-    \item A higher PSNR suggests improved perceptual quality in reconstructions when using Log-Cosh.
-    \item KL Divergence was slightly lower for Log-Cosh, indicating a better balance between compression and regularization.
-    \item These results affirm the hypothesis that the Log-Cosh loss leads to more visually realistic reconstructions, thus answering RQ2.
+    \item \textbf{Figure~\ref{fig:val_loss_comparison}} shows that the Log-Cosh loss function results in faster and more stable convergence compared to MSE. After the initial 20 epochs, the loss curve for Log-Cosh remains consistently lower, confirming its robustness against outliers and noisy gradients.
+
+    \item \textbf{Figure~\ref{fig:val_psnr_comparison}} demonstrates that the Log-Cosh variant yields higher PSNR throughout training. Since PSNR is a direct indicator of reconstruction quality, this suggests that reconstructions from the Log-Cosh model are closer to the original inputs in pixel space.
+
+    \item \textbf{Figure~\ref{fig:val_ssim_comparison}} provides further evidence that the Log-Cosh loss leads to more perceptually realistic outputs. The SSIM curve, which accounts for luminance, contrast, and structural similarity, consistently favors Log-Cosh, particularly in the later epochs, indicating better structural retention in the reconstructions which is clearly shown in the plot blue line indicated the log-cosh loss ssim and orange indicates the mse loss ssim.
+
+    \item Additionally, the KL divergence is lower in the Log-Cosh variant (Table~\ref{tab:loss_comparison}), indicating a better trade-off between regularization and reconstruction fidelity.
 \end{itemize}
 
+Overall, these findings confirm that the Log-Cosh loss not only provides better quantitative performance but also leads to reconstructions that are perceptually more accurate and visually coherent. This clearly answers RQ2 by validating Log-Cosh as the superior choice for training VAEs in this context.
+
+
+\clearpage
 
 
 \subsection{Visual Comparison of Reconstructions} \label{subsubsec:vae_visual_recon}
@@ -262,101 +337,34 @@ These qualitative results further confirms that adopting the Log-Cosh loss, as m
 \subsection{Latent Space Visualization and Separability}
 \label{subsubsec:vae_latent_space}
 
-An essential objective of the VAE in this thesis is not only to reconstruct driving scene images, but also to learn a semantically meaningful and class-discriminative latent representation that can support downstream classification and interpretability. To qualitatively examine the structure of the latent space, dimensionality reduction techniques were applied to the 128-dimensional latent vectors produced by the trained VAE encoder.
+Although the VAE in this thesis is trained in an unsupervised manner without using class labels, one of its key objectives is to learn a latent space that not only enables accurate image reconstruction but also supports downstream classification and interpretability. To examine this, the latent vectors produced by the encoder were evaluated using a separate classifier trained on top of these vectors. Despite the lack of supervision during VAE training, the classifier demonstrated strong performance, indicating that the learned latent representations capture semantically meaningful and class-relevant features.
 
-The latent vectors extracted from the test dataset were projected into two dimensions using Principal Component Analysis (PCA) and t-Distributed Stochastic Neighbor Embedding (t-SNE). These projections were visualized with both the ground-truth class labels and the labels predicted by the downstream classifier. The PCA visualizations are shown in Figures~\ref{fig:pca_true} and~\ref{fig:pca_pred}, while Figures~\ref{fig:tsne_true} and~\ref{fig:tsne_pred} show the t-SNE embeddings.
+To qualitatively assess the structure of the latent space, dimensionality reduction techniques were applied to the 128-dimensional latent vectors extracted from the test set. These vectors were projected into two dimensions using Principal Component Analysis (PCA) and t-Distributed Stochastic Neighbor Embedding (t-SNE). The resulting embeddings are shown in Figure~\ref{fig:latent_space_visualizations}, where each point is colored according to its ground-truth class label.
 
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/pca_latent_space_true_labels.png}
-        \caption{PCA projection of latent vectors, colored by true labels.}
+        \includegraphics[width=\textwidth]{img/vae_results/media_images_PCA Latent_0_1f2a94b6feecab3585be.png}
+        \caption{PCA projection of latent vectors (by true labels).}
         \label{fig:pca_true}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/pca_latent_space_predicted_labels.png}
-        \caption{PCA projection of latent vectors, colored by predicted labels.}
-        \label{fig:pca_pred}
-    \end{subfigure}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/tsne_latent_space_true_labels.png}
-        \caption{t-SNE projection of latent vectors, colored by true labels.}
+        \includegraphics[width=\textwidth]{img/vae_results/media_images_t-SNE Latent_1_77cd107489e31c6c9f4d.png}
+        \caption{t-SNE projection of latent vectors (by true labels).}
         \label{fig:tsne_true}
     \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{img/vae_results/tsne_latent_space_predicted_labels.png}
-        \caption{t-SNE projection of latent vectors, colored by predicted labels.}
-        \label{fig:tsne_pred}
-    \end{subfigure}
-    \caption{Latent space projections using PCA and t-SNE. Left: color-coded by true labels. Right: color-coded by classifier predictions.}
+    \caption[Latent space projections using PCA and t-SNE]{%
+Latent space projections using PCA and t-SNE for test set samples. Each point represents an encoded image projected to 2D. Colors denote ground-truth labels: Class 0 = \texttt{STOP}, Class 1 = \texttt{GO}, Class 2 = \texttt{LEFT}, Class 3 = \texttt{RIGHT}.}
     \label{fig:latent_space_visualizations}
 \end{figure}
 
-These visualizations are instrumental in exploring how the VAE organizes semantically similar samples in latent space. PCA, being a linear technique, provides insight into global structure and class spread, while t-SNE captures fine-grained, non-linear relationships that highlight local class groupings. Notably, the \texttt{STOP} and \texttt{RIGHT} classes form more compact clusters, while \texttt{GO} and \texttt{LEFT} appear relatively scattered, suggesting potential entanglement in their representations.
 
-To complement these visual observations, several quantitative metrics were computed:
+These visualizations illustrate the extent to which semantically similar driving scenes are grouped in the latent space. While some local clustering is visible—particularly for the \texttt{STOP} (Class 0) and \texttt{RIGHT} (Class 3) classes—the overall class separability is limited. Notably, the \texttt{GO} (Class 1) and \texttt{LEFT} (Class 2) classes show significant overlap, which may reflect their visual similarity in real-world scenarios such as urban intersections.
 
-\begin{itemize}
-    \item \textbf{Explained Variance (PCA):} As shown in Table~\ref{tab:pca_explained_variance}, the first three principal components captured only 9.76\% of the total variance, indicating a highly distributed latent structure that cannot be adequately visualized in two or three dimensions alone.
-    
-    \item \textbf{Silhouette Score:} The silhouette score of $-0.0088$ (Table~\ref{tab:silhouette_score}) indicates that the class-wise clusters in the latent space are not well-separated overall. This suggests that while some local grouping exists, the global separability is weak.
+This observation reflects a core tradeoff in VAE training: while the KL divergence term encourages smooth and continuous latent distributions, it can also limit the formation of sharply separable class clusters—especially when such clusters do not emerge naturally from the reconstruction objective alone.
 
-    \item \textbf{Centroid Distance Matrix:} Table~\ref{tab:centroid_distance_matrix} presents the pairwise Euclidean distances between class centroids in the latent space. The \texttt{STOP} class is most distant from the others, while \texttt{GO} and \texttt{LEFT} show high proximity (0.897), supporting the observed visual overlap in t-SNE and PCA plots.
-\end{itemize}
-
-\begin{table}[h]
-\centering
-\caption{Explained Variance by Top 3 PCA Components}
-\begin{tabular}{lcc}
-\toprule
-\textbf{Component} & \textbf{Explained Variance Ratio} & \textbf{Cumulative Variance} \\
-\midrule
-PC1 & 3.43\% & 3.43\% \\
-PC2 & 3.20\% & 6.63\% \\
-PC3 & 3.13\% & 9.76\% \\
-\bottomrule
-\end{tabular}
-\label{tab:pca_explained_variance}
-\end{table}
-
-\begin{table}[h]
-\centering
-\caption{Latent Space Centroid Distance Matrix (Euclidean)}
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Class} & \textbf{STOP} & \textbf{GO} & \textbf{RIGHT} & \textbf{LEFT} \\
-\midrule
-STOP   & 0.00 & 1.013 & 0.916 & 0.971 \\
-GO     & 1.013 & 0.00 & 0.892 & 0.898 \\
-RIGHT  & 0.916 & 0.892 & 0.00 & 0.839 \\
-LEFT   & 0.971 & 0.898 & 0.839 & 0.00 \\
-\bottomrule
-\end{tabular}
-\label{tab:centroid_distance_matrix}
-\end{table}
-
-\begin{table}[h]
-\centering
-\caption{Silhouette Score of VAE Latent Space}
-\begin{tabular}{lc}
-\toprule
-\textbf{Metric} & \textbf{Value} \\
-\midrule
-Silhouette Score & $-0.0088$ \\
-\bottomrule
-\end{tabular}
-\label{tab:silhouette_score}
-\end{table}
-
-These findings highlight a core tradeoff in VAE training: while the KL divergence term promotes smooth and continuous latent distributions, it may limit the emergence of strongly separable class clusters—particularly when visual overlap exists in the input domain (e.g., \texttt{GO} and \texttt{LEFT} situations in urban driving scenes).
-
-Importantly, the VAE was trained in a completely unsupervised manner, without using any class labels. The latent structure observed here emerges naturally from the model's objective of reconstructing driving scenes while aligning with a Gaussian prior. This makes the latent space visualizations and metrics critical for evaluating the VAE’s representational quality, as well as its suitability for downstream tasks such as classification and counterfactual explanation generation, addressed in subsequent sections.
+Importantly, since the VAE was trained entirely without labels, the latent space structure observed here arises organically from its goal of reconstructing input images while conforming to a Gaussian prior. As such, latent space visualizations and separability metrics serve as useful tools for evaluating the VAE’s representational capacity and its suitability for downstream tasks, including classification and counterfactual explanation generation discussed in later sections.
 
 
 
@@ -366,6 +374,10 @@ Importantly, the VAE was trained in a completely unsupervised manner, without us
 
 
 
+
+
+
+\clearpage
 
 
 
@@ -385,22 +397,22 @@ To contextualize the performance of the neural model, four traditional classifie
 
 \begin{figure}[h]
 \centering
-\begin{subfigure}{0.48\textwidth}
+\begin{subfigure}{0.49\textwidth}
     \includegraphics[width=\linewidth]{img/classifier/logistic_regression_confucion_matrix.png}
     \caption{Logistic Regression}
 \end{subfigure}
-\begin{subfigure}{0.48\textwidth}
+\begin{subfigure}{0.49\textwidth}
     \includegraphics[width=\linewidth]{img/classifier/KNN_confucion_matrix.png}
     \caption{KNN}
 \end{subfigure}
 
 \vspace{0.5em}
 
-\begin{subfigure}{0.48\textwidth}
+\begin{subfigure}{0.49\textwidth}
     \includegraphics[width=\linewidth]{img/classifier/random_forest_confucion_matrix.png}
     \caption{Random Forest}
 \end{subfigure}
-\begin{subfigure}{0.48\textwidth}
+\begin{subfigure}{0.49\textwidth}
     \includegraphics[width=\linewidth]{img/classifier/SVM_confucion_matrix.png}
     \caption{SVM}
 \end{subfigure}
@@ -510,7 +522,8 @@ Training progression is visualized in Figure~\ref{fig:loss_accuracy_plot}, which
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{img/classifier/training_loss_accuracy_4_classes.png}
-    \caption{Training loss and accuracy curves for the neural classifier over 20 epochs.}
+    \caption[Training performance of 4-class neural classifier]{%
+Training loss and accuracy curves for the neural classifier across 20 epochs. The plot illustrates the model's convergence and learning dynamics during training.}
     \label{fig:loss_accuracy_plot}
 \end{figure}
 
@@ -541,7 +554,8 @@ The confusion matrix in Figure~\ref{fig:conf_matrix} provides additional insight
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.6\textwidth]{img/classifier/confusion_matrix_4_classes.png}
-    \caption{Confusion matrix for the neural classifier on the 4-class test set.}
+    \caption[Confusion matrix of neural classifier (4-class)]{%
+Confusion matrix of the neural classifier on the 4-class test set. The matrix highlights per-class prediction performance and any misclassification trends.}
     \label{fig:conf_matrix}
 \end{figure}
 
@@ -575,26 +589,7 @@ These findings empirically support the hypothesis posed in RQ1 that deep generat
 
 
 
-% \clearpage
-% \section{Reason for Re-Encoding in Effective Counterfactual Generation}
-% A critical empirical observation in our evaluation was the impact of the re-encoding step on the success of counterfactual explanation (CE) generation. In many cases, directly classifying the latent representation obtained from a masked image did not result in a label change. However, once the masked latent was decoded into an image and re-encoded through the VAE, the classifier frequently predicted a different class, resulting in successful CE discovery.
-
-% To quantify this behavior, we compared:
-% \begin{itemize}
-%     \item The latent vector of the original image ($z_\text{orig}$),
-%     \item The latent vector obtained by encoding the masked input ($z_\text{masked}$),
-%     \item The latent vector obtained by re-encoding the reconstructed image ($z_\text{re-encoded}$).
-% \end{itemize}
-
-% While $z_\text{masked}$ often deviated significantly from $z_\text{orig}$, it remained ineffective at inducing a class change. In contrast, $z_\text{re-encoded}$—despite also being numerically distinct—frequently resided in a different class region in the latent space, leading to successful counterfactual classification. This shows that the decoder effectively fills in masked information with plausible content, and the re-encoding step maps the image back to a region where the classifier's decision boundary becomes sensitive to the modified features.
-
-% This observation is further validated by high CE generation rates in methods using this decode-reencode pipeline (e.g., LIME on Latent, Grid-Based Masking, Object Detection Masking). Metrics such as proximity and sparsity support this finding by highlighting that only minimal but semantically important latent changes are needed to flip the classifier’s decision—something the decoder enables implicitly.
-
-% These results affirm the decoder's essential role not only in maintaining visual fidelity but also in producing counterfactuals that are realistic and interpretable.
-
-
-
-\clearpage
+\vspace{1em}
 
 \section{Evaluation of Counterfactual Explanation Generation via Masking Techniques (RQ3)} \label{sec:masking_eval}
 To address RQ3, we evaluate the quality and efficiency of counterfactual explanations generated using multiple feature masking techniques which are explained in the \cref{sec:feature_masking_pipeline}. Each method is assessed using metrics commonly adopted in counterfactual explanation literature~\cite{DELANEY2023103995, chan2022comparativestudyfaithfulnessmetrics, Singh1622975, MARKUS2021103655, DBLP:journals/corr/abs-1905-07697}, including Validity, Runtime, Sparsity, Proximity, Method Overlap, and Failure Rate. These metrics capture both the effectiveness (e.g., class change, semantic integrity, sparsity of perturbation) and efficiency (e.g., runtime, proximity) of the generated counterfactuals.
@@ -606,22 +601,24 @@ We first measured the number of successful counterfactuals generated by each mas
 
 \begin{figure}[htbp]
     \centering
-    \begin{subfigure}{0.45\textwidth}
+    \begin{subfigure}{0.48\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/masking_results/bar_chart_explanations_2_class.png}
-        \caption{Total number of counterfactual explanations generated by each method (2-class setup).}
+        \caption{CE count by method (2-class setup).}
         \label{fig:ce_count_binary}
     \end{subfigure}
     \hfill
-    \begin{subfigure}{0.45\textwidth}
+    \begin{subfigure}{0.48\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/masking_results/bar_chart_explanations_4_class.png}
-        \caption{Total number of counterfactual explanations generated by each method (4-class setup).}
+        \caption{CE count by method (4-class setup).}
         \label{fig:bar_chart_ce_count_multi}
     \end{subfigure}
-    \caption{Comparison of counterfactual explanations generated by different masking methods.}
+    \caption[Number of counterfactuals found by method (binary vs multi-class)]{%
+Comparison of the number of successful counterfactual explanations generated by different masking methods across (a) the binary-class and (b) multi-class classification setups. Each bar represents the total count of counterfactuals found using that method.}
     \label{fig:ce_count_comparison}
 \end{figure}
+
 
 As shown in these figures, LIME on Latent NUN outperforms other methods in binary class and grid based maskning in multi-class settings. It successfully explained 2,298 out of 2,422 images (94.88\%) in the binary setup. While 2,395 images out of 2422 images (98.88\%) in the 4-class case. In contrast, LIME on Latent feature masking using median values shows the lowest performance, with only 6.98\% and 12.26\% success in the binary and multi-class settings, respectively.
 
@@ -633,19 +630,22 @@ To understand how these methods complement one another, we analyzed the overlaps
     \begin{subfigure}{0.45\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/masking_results/venn_2_class.png}
-        \caption{Venn diagram of counterfactual explanations by method (2-class setup).}
+        \caption{Method overlap (2-class).}
         \label{fig:venn_binary}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.45\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/masking_results/venn_4_class.png}
-        \caption{Venn diagram of counterfactual explanations by method (4-class setup).}
+        \caption{Method overlap (4-class).}
         \label{fig:venn_multi}
     \end{subfigure}
-    \caption{Comparison of counterfactual explanations by method using Venn diagrams.}
+    \caption[Overlap of counterfactuals per method using Venn diagrams]{%
+Venn diagrams showing the overlap of counterfactual explanations generated by different masking methods in the (a) 2-class and (b) 4-class setups. These visualizations highlight where methods produce unique or shared explanations.}
     \label{fig:venn_comparison}
 \end{figure}
+
+
 
 From Figure~\ref{fig:venn_binary}, we observe:
 \begin{itemize}
@@ -701,8 +701,8 @@ To further assess the minimality and fidelity of generated counterfactual explan
 \begin{itemize}
     \item \textbf{Sparsity} refers to the number of features or regions that were modified to flip the prediction. 
     \begin{itemize}
-        \item In \textit{LIME on Latent feature masking (Median)} and \textit{LIME on Latent using NUN}, sparsity was calculated as the number of latent dimensions replaced. These values were logged during counterfactual generation under the column \texttt{Features Replaced}.
-        \item For \textit{Grid-Based Masking}, sparsity was computed based on the number of grid patches masked in the image. Since the masking method stores the number of masked patches explicitly (e.g., 3 out of 128 patches), these values were extracted from the \texttt{Masked Patches} column in the output logs.
+        \item In \textit{LIME on Latent feature masking (Median)} and \textit{LIME on Latent using NUN}, sparsity was calculated as the number of latent dimensions replaced. These values were logged during counterfactual generation under the column Features Replaced.
+        \item For \textit{Grid-Based Masking}, sparsity was computed based on the number of grid patches masked in the image. Since the masking method stores the number of masked patches explicitly (e.g., 3 out of 128 patches), these values were extracted from the masked patches column in the output logs\footnote{\url{https://github.com/darshandodamani/A-Counterfactual-Explanation-Approach-Using-Deep-Generative-Models/tree/main/results/masking}}.
         \item In \textit{LIME on Image}, the sparsity was treated as 128 in all cases, since masking the image space typically involved zeroing out all LIME-selected superpixels, leading to maximum perturbation.
     \end{itemize}
     
@@ -712,7 +712,7 @@ To further assess the minimality and fidelity of generated counterfactual explan
         \[
         \text{Proximity} = \|\mathbf{z} - \mathbf{z'}\|_2
         \]
-        \item This ensures consistent comparison across methods since all counterfactuals are ultimately evaluated in the same latent space, where the classifier operates. The proximity values were logged under the \texttt{Proximity} column for each generated counterfactual.
+        \item This ensures consistent comparison across methods since all counterfactuals are ultimately evaluated in the same latent space, where the classifier operates. The proximity values were logged for each generated counterfactual.
     \end{itemize}
 \end{itemize}
 
@@ -739,7 +739,7 @@ While sparsity and proximity are core evaluation metrics in counterfactual expla
 
 However, for image-based masking techniques such as grid masking and LIME on image, these metrics become less interpretable. Sparsity in image space reflects the number of masked regions but does not consider their semantic content or spatial impact. More critically, proximity is computed in latent space after re-encoding the masked image. Since masked inputs may fall outside the VAE's training distribution, the resulting proximity values can be distorted due to artifacts introduced during reconstruction.
 
-Therefore, while we report sparsity and proximity across all methods for completeness, we emphasize that these metrics are most meaningful and comparable within latent-space masking pipelines. Caution is advised when interpreting or comparing these values across fundamentally different domains of intervention.
+Therefore, while we report sparsity and proximity across all methods for completeness, we emphasize that these metrics are most meaningful and comparable within latent-space masking pipelines.
 
 
 
@@ -804,11 +804,12 @@ To consolidate these comparisons, Table~\ref{tab:cf_visual_examples} provides an
 
 \begin{table}[htbp]
     \centering
-    \caption{Representative counterfactual explanations across different masking methods. In the original images, the label is \textbf{STOP}; however, the counterfactual explanation shows \textbf{GO} due to the removal of the STOP sign.}
+    \caption[Counterfactual examples across masking methods]{%
+Representative counterfactual explanations across different masking methods. In each case, the original image is labeled \textbf{STOP}, and the counterfactual image is labeled \textbf{GO} due to the masking or removal of the STOP sign or related features.}
     \label{tab:cf_visual_examples}
     \begin{tabular}{>{\centering\arraybackslash}p{3.5cm} >{\centering\arraybackslash}c >{\centering\arraybackslash}c}
         \toprule
-        \textbf{Masking Method} & \textbf{Original Image (STOP)} & \textbf{Counterfactual Explanation (GO)} \\
+        \textbf{Masking Method} & \textbf{Original Image (STOP)} & \textbf{Counterfactual (GO)} \\
         \midrule
         Grid-Based Masking & 
         \includegraphics[width=0.3\textwidth]{img/masking_results/original.png} & 
@@ -832,6 +833,7 @@ To consolidate these comparisons, Table~\ref{tab:cf_visual_examples} provides an
         \bottomrule
     \end{tabular}
 \end{table}
+
 
 \textbf{Observations:}
 \begin{itemize}
@@ -865,88 +867,87 @@ These results strongly support the adoption of latent-space counterfactual techn
 
 
 
-
-
-
-
-
-
-
-\clearpage
-
-\section{Overview of the Human-centric Evaluation} \label{sec:human_evluation}
+\section{Human-Centered Evaluation: Methodology and Results (RQ4)} \label{sec:human_evaluation}
 
 While traditional quantitative metrics such as SSIM and PSNR offer insight into the visual quality of reconstructed counterfactual images, they do not fully reflect human judgment regarding interpretability, plausibility, or realism. As noted by Delaney et al.~\cite{DELANEY2023103995}, counterfactual explanations are meant to fulfill human explanation goals and must therefore be evaluated with human-centered metrics. This is especially crucial in high-stakes domains such as autonomous driving, where explanations must not only be technically valid but also intuitively understandable and semantically coherent from a user's perspective.
 
-To incorporate this human-centered evaluation, we developed a web-based application using FastAPI for backend processing and Jinja2 for rendering the frontend. The system was designed to present users with the original input image, its predicted label, and four corresponding counterfactual explanations—each generated using a different masking technique: Grid-Based Masking, LIME on Images, LIME on Latent Features, and LIME on Latent Features using the NUN method. To ensure fairness and avoid bias, the interface randomized the order of counterfactuals and concealed the identity of the underlying methods. Participants were only shown the prediction labels associated with each counterfactual image, not the technique used to generate it. A screenshot of the evaluation interface is provided in Appendix~\ref{app:web_interface}, Figure~\ref{fig:app:form_ui}.
+To incorporate this human-centered evaluation, we developed a web-based application using FastAPI for backend processing and Jinja2 for rendering the frontend. The system was designed to present users with the original input image, its predicted label, and four corresponding counterfactual explanations each generated using a different masking technique: Grid-Based Masking, LIME on Images, LIME on Latent Features, and LIME on Latent Features using the NUN method. To ensure fairness and avoid bias, the interface randomized the order of counterfactuals and concealed the identity of the underlying methods. Participants were only shown the prediction labels associated with each counterfactual image, not the technique used to generate it. A screenshot of the evaluation interface is provided in Appendix~\ref{appendix:webinterface}, Figure~\ref{fig:app:form_ui}.
 
-Here also the object detection based masking is ignored because the results obtained to generate counterfactual explanations using this masking method are very less. Due this there were no much sufficient examples images to showcase to user for evaluating.
+Object detection-based masking was excluded from this user study due to its low counterfactual success rate. It failed to consistently produce valid counterfactual examples and thus lacked sufficient representative samples for human evaluation.
 
-Each user was asked to evaluate the counterfactual explanations based on three criteria: Interpretability (how clearly the image highlights the minimal change required to alter the model’s prediction), Plausibility (how realistic and contextually appropriate the modified image appears), and Visual Coherence (whether the transformation affects only necessary regions while preserving the rest of the scene). These aspects were rated on a Likert scale of 1 (poor) to 5 (excellent). Users also had the option to provide qualitative comments to elaborate on their assessments.
-
-The system randomized the order of counterfactual images and concealed the identities of the masking methods, labeling each explanation only with its class prediction to reduce bias. The selected samples were those for which all four methods successfully generated counterfactual explanations example images (see Section~\ref{subsubsec:masking_method_overlap} for selection criteria).
-
-
+Each user was asked to evaluate the counterfactual explanations based on three criteria: interpretability (how clearly the image highlights the minimal change required to alter the model’s prediction), plausibility (how realistic and contextually appropriate the modified image appears), and visual coherence (whether the transformation affects only necessary regions while preserving the rest of the scene). These aspects were rated on a Likert scale of 1 to 5.\footnote{The Likert scale is a common psychometric scale used in questionnaires, where 1 typically represents "strongly disagree" or "poor" and 5 represents "strongly agree" or "excellent".} Users also had the option to provide qualitative comments to elaborate on their assessments. The samples shown were those where all four methods successfully generated counterfactuals (see Section~\ref{subsubsec:masking_method_overlap} for the selection criteria).
 
 \subsection{Quantitative Analysis of User Ratings} \label{subsubsec:quantitative_analysis_of_user_ratings}
-To address RQ4 (Which counterfactual explanation method is preferred by users when selecting among generated explanations of the same original image, and what factors influence user preference?) we conducted an in-depth analysis of the collected human ratings. The anonymized evaluation labels were internally mapped to the respective methods Counterfactual\_1 corresponds to Grid-Based Masking, Counterfactual\_2 to LIME on Image Masking, Counterfactual\_3 to LIME on Latent Features, and Counterfactual\_4 to LIME on Latent Features using the NUN method.
 
+To address RQ4 (Which counterfactual explanation method is preferred by users when selecting among generated explanations of the same original image, and what factors influence user preference?), we conducted an in-depth analysis of the collected human ratings. The anonymized evaluation labels were internally mapped to the respective methods: Counterfactual\_1 corresponds to Grid-Based Masking, Counterfactual\_2 to LIME on Image Masking, Counterfactual\_3 to LIME on Latent Features, and Counterfactual\_4 to LIME on Latent Features using the NUN method.
 
-The results of the user study, visualized in Figure~\ref{fig:bar_plot_user_eval}, indicate that LIME on Latent Features using NUN (Method 4) consistently achieved the highest average ratings across all three evaluation criteria. Grid-Based Masking (Method 1) emerged as the second-most preferred technique, also scoring well on all aspects. In contrast, LIME on Image Masking (Method 2) received the lowest ratings, with participants frequently citing issues like over-altered, loss of visual detail, and unrealistic reconstructions. LIME on Latent Features without NUN (Method 3) performed moderately, offering acceptable quality but lacking the precision of NUN-based selection.
+The results of the user study, visualized in Figure~\ref{fig:bar_plot_user_eval}, show that Grid-Based Masking (Method 1) achieved the highest scores in both interpretability (4.32) and visual coherence (4.16), indicating its strength in generating localized, structured changes while preserving background consistency. In terms of plausibility, LIME on Latent Features (Method 3) and LIME on Latent Features using NUN (Method 4) performed best, scoring 4.04 and 3.96 respectively—reflecting their ability to generate semantically plausible modifications in the latent space. In contrast, LIME on Image Masking (Method 2) consistently scored the lowest across all criteria (1.00), with participants noting issues such as severe artifacts, unrealistic reconstructions, and lack of clarity.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.75\textwidth]{img/human_rating_results/bar_plot_user_evaluations.png}
-    \caption{Average user ratings (scale 1–5) for each counterfactual method across all evaluation criteria.}
+    \caption[Bar plot of average user ratings for CE methods]{%
+Average user ratings (scale 1–5) for each counterfactual explanation method across all evaluation criteria. Higher values indicate better perceived interpretability, plausibility, or coherence.}
     \label{fig:bar_plot_user_eval}
 \end{figure}
 
-To provide a consolidated view, we generated a heatmap (Figure~\ref{fig:heatmap_user_eval}) summarizing the average user ratings per method for each evaluation criterion. This visual representation further confirms the overall superiority of Method 4, which maintained high scores with minimal variance across interpretability, plausibility, and visual coherence.
 
-Further breakdowns by criterion are presented in Figures~\ref{fig:cf_interpretability}, \ref{fig:cf_plausibility}, and \ref{fig:cf_visualcoherence}. These plots show that Method 4 achieved near-perfect ratings (~5) in all categories. In particular, its strength in visual coherence demonstrates its ability to isolate semantically meaningful edits without disrupting background consistency. Grid-Based Masking also scored high in interpretability and coherence, making it a reliable and efficient alternative, especially where computational speed is important. In contrast, Method 2 struggled across all dimensions, reflecting limitations in the VAE’s capacity to reconstruct images with zero-masked regions introduced by LIME on Image masking.
+To provide a consolidated view, we generated a heatmap (Figure~\ref{fig:heatmap_user_eval}) summarizing the average user ratings per method for each evaluation criterion. This visual representation clearly demonstrates the complementary strengths of different methods. Grid-Based Masking excels in interpretability and coherence, while latent space methods, particularly Method 3 and Method 4, produce more realistic and semantically aligned modifications.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.6\textwidth]{img/human_rating_results/heatmap_user_evaluations.png}
-    \caption{Heatmap of average user ratings for each counterfactual method and evaluation criterion.}
+    \includegraphics[width=0.75\textwidth]{img/human_rating_results/heatmap_user_evaluations.png}
+    \caption[Heatmap of user evaluations by method and criterion]{%
+Heatmap of average user ratings (scale 1–5) for each counterfactual method across individual evaluation dimensions: interpretability, plausibility, and visual coherence. Darker shades represent stronger user agreement.}
     \label{fig:heatmap_user_eval}
 \end{figure}
 
+
 \vspace{0.5em}
 \paragraph{Per-Criterion Analysis.}
-Figures~\ref{fig:cf_interpretability}--\ref{fig:cf_visualcoherence} present a breakdown of average ratings per evaluation criterion:
+Figures~\ref{fig:cf_interpretability}--\ref{fig:cf_visualcoherence} provide detailed views of average ratings per evaluation criterion:
 
 \begin{itemize}
-    \item \textbf{Interpretability:} LIME on Latent NUN (Method 4) was rated highest (~5), followed by Grid-Based Masking. LIME on Image received the lowest ratings due to aggressive masking of salient regions.
-    \item \textbf{Plausibility:} Again, Method 4 led the ratings, reflecting its ability to produce realistic modifications. Grid-Based Masking served as a strong secondary option, while Method 2 lagged due to unconvincing reconstructions.
-    \item \textbf{Visual Coherence:} Method 4 stood out by preserving contextual elements and background consistency, especially when minimal edits sufficed for counterfactual generation.
+    \item Interpretability: Grid-Based Masking (Method 1) received the highest rating (4.32), followed by LIME on Latent NUN (2.64) and LIME on Latent (2.44). LIME on Image (1.00) was rated lowest due to aggressive, uninformative masking patterns.
+    \item Plausibility: LIME on Latent (Method 3) was rated most plausible (4.04), with NUN-enhanced latent manipulation (Method 4) close behind (3.96). Grid-Based Masking scored moderately (2.28), while LIME on Image again received the lowest rating (1.00).
+    \item Visual Coherence: Grid-Based Masking again led with 4.16, confirming its strength in preserving background information. Method 4 followed with 3.04, Method 3 scored 2.76, and Method 2 trailed at 1.00.
 \end{itemize}
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.5\textwidth]{img/human_rating_results/Interpretability_ratings.png}
-    \caption{Average interpretability ratings per counterfactual method.}
+    \includegraphics[width=0.6\textwidth]{img/human_rating_results/Interpretability_ratings.png}
+    \caption[User-rated interpretability scores by method]{%
+Average user ratings for interpretability across counterfactual explanation methods (scale 1–5). Higher scores indicate better user understanding of why the prediction changed.}
     \label{fig:cf_interpretability}
 \end{figure}
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.5\textwidth]{img/human_rating_results/Plausibility_ratings.png}
-    \caption{Average plausibility ratings per counterfactual method.}
+    \includegraphics[width=0.6\textwidth]{img/human_rating_results/Plausibility_ratings.png}
+    \caption[User-rated plausibility scores by method]{%
+Average user ratings for plausibility across counterfactual explanation methods (scale 1–5). Ratings reflect how realistic the generated counterfactual images appear to human observers.}
     \label{fig:cf_plausibility}
 \end{figure}
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.5\textwidth]{img/human_rating_results/VisualCoherence_ratings.png}
-    \caption{Average visual coherence ratings per counterfactual method.}
+    \includegraphics[width=0.6\textwidth]{img/human_rating_results/VisualCoherence_ratings.png}
+    \caption[User-rated visual coherence scores by method]{%
+Average user ratings for visual coherence across counterfactual explanation methods (scale 1–5). This criterion reflects image clarity, absence of artifacts, and semantic consistency with the original.}
     \label{fig:cf_visualcoherence}
 \end{figure}
 
 \vspace{0.5em}
 \subsection{Qualitative Feedback and Discussion}
-Participant comments provided additional depth to the numerical ratings. Explanations generated via LIME on Latent NUN were frequently described as “realistic,” “semantically consistent,” and “preserving important details.” Users appreciated the minimal yet impactful changes these counterfactual explanations found, allowing for intuitive understanding of model decisions. Grid-Based Masking was praised for producing “clean,” “structured,” and “easily interpretable” edits. On the other hand, LIME based masking on Latent Features received mixed feedback, while some edits were described as “acceptable,” others were criticized for being blurry or poorly localized. Most negative feedback was associated with LIME on Image Masking, where participants described counterfactual explanations found images as “dark,” “unrecognizable,” or “lacking detail,” highlighting a significant gap in visual realism.
 
-These results underscore the importance of human-centric validation in explainable AI systems. While algorithmic evaluations such as counterfactual explanation coverage (interpreted as validity in this work), SSIM, and PSNR provide essential performance benchmarks, they often fail to capture the nuances of human perception. In real-world deployments particularly in safety-critical domains like autonomous driving interpretability must align with human intuition to foster trust and acceptance. The findings demonstrate that the LIME on Latent features masking using NUN method and Grid based masking method consistently outperforms other approaches across both quantitative metrics and user-based assessments, making it the most effective strategy for generating counterfactual explanations that are both technically sound and intuitively meaningful.
+In addition to numerical ratings, users provided open-ended feedback to elaborate on their experience evaluating the counterfactual explanations. A thematic analysis of these comments revealed distinct strengths and weaknesses for each method.
 
-By narrowing the gap between human expectations and algorithmic reasoning, such methods offer a promising path toward building more trustworthy AI systems. While this study represents a significant step in aligning model explanations with user understanding, further advancements are necessary to achieve deeper trust. Enhancing generative models, refining latent manipulations, and incorporating more expressive human feedback mechanisms could further bridge the trust gap, bringing us closer to AI systems that behave not only accurately but also transparently and collaboratively.
+Grid-Based Masking (Method 1) was frequently praised for its clarity and precision. Participants described it using phrases such as "clear and coherent masking", "very clear and detailed", and "excellent clarity and structure". These remarks align with its high interpretability and visual coherence scores. Feedback such as "satisfactory masking overall" and "consistent performance" further emphasize its reliability.
+
+LIME on Image Masking (Method 2) received universally negative feedback. Users described outputs as "image mostly black", "completely dark image", "no visible detail", and "output unusable". These comments align with its lowest ratings across all evaluation dimensions, indicating that the zero-masking strategy significantly degraded image quality and interpretability.
+
+LIME on Latent Features (Method 3) received mixed responses. Some users described the reconstructions as "moderate quality" and "acceptable", while others noted "average quality with slight artifacts" or "over-modified regions". These qualitative impressions reflect the middle-range scores of this method.
+
+LIME on Latent Features using NUN (Method 4) was generally well-received. Comments included "realistic modification", "more details preserved", and "mimics original scene well". These remarks highlight its effectiveness in generating semantically aligned counterfactuals. However, a few responses indicated that further refinement could improve local consistency.
+
+Overall, qualitative feedback closely mirrored the quantitative trends. Grid-Based Masking was preferred for clarity and structure, while latent space methods especially with NUN guidance—offered realism and plausibility. LIME on Image consistently underperformed. This underscores the value of integrating user feedback in evaluating counterfactual methods, especially in critical applications like autonomous driving.
