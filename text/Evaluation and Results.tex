@@ -114,21 +114,13 @@ The final VAE architecture design motivated from Idrees Shaikh’s CARLA DRL pro
 
 \subsection{Training Performance and Loss Analysis} \label{subsubsec:vae_training_loss}
 
-Two VAE variants were trained for 200 epochs each (see hyperparameters in \cref{subsec:hyperparameter_config}), differing only in their reconstruction loss. Mean Squared Error (MSE) and Log-Cosh error. Throughout training, several key performance metrics were monitored to evaluate convergence, reconstruction quality, and regularization behavior:
+Two VAE variants were trained for 200 epochs each (see hyperparameters in \cref{subsec:hyperparameter_config}), differing only in their reconstruction loss function: one using Mean Squared Error (MSE) and the other using Log-Cosh. Throughout training, several key performance metrics were monitored to evaluate model convergence, reconstruction quality, and the behavior of latent space regularization.
 
+The \textbf{KL divergence} reflects how well the learned latent distribution aligns with the unit Gaussian prior, and its formulation is rooted in the VAE loss function discussed in \cref{subsec:VAE Objective Function and Loss} and \cref{subsec:reparameterization_trick}. The \textbf{reconstruction loss} measures pixel-wise error between original and generated images, directly reflecting the decoder's effectiveness and forming one half of the ELBO objective, as described in \cref{subsec:VAE Objective Function and Loss}. The \textbf{total loss}, combining reconstruction loss and KL divergence (with an annealing weight), serves as the main optimization target and is detailed in the ELBO formulation. 
 
-\begin{itemize}
-    \item \textbf{KL Divergence:} Reflects the alignment of the learned latent distribution with the unit Gaussian prior.
-    \item \textbf{Reconstruction Loss:} Measures pixel-wise reconstruction error between the original and generated image.
-    \item \textbf{Total Loss:} Sum of reconstruction loss and KL divergence (with an annealing weight).
-    \item \textbf{Validation SSIM:} Structural similarity measure capturing image perceptual quality.
-    \item \textbf{PSNR:} Peak Signal-to-Noise Ratio, another indicator of perceptual reconstruction quality.
-    \item \textbf{Pixel Accuracy:} Measures how closely the reconstructed image matches the input at pixel level.
-\end{itemize}
+In addition to these theoretical components, perceptual metrics were employed to evaluate the quality of generated images. The \textbf{Structural Similarity Index (SSIM)} captures human-perceived image similarity and complements traditional pixel-based losses. Similarly, the \textbf{Peak Signal-to-Noise Ratio (PSNR)} offers a quantitative measure of image fidelity. Finally, \textbf{pixel accuracy} assesses how closely the reconstructed image matches the original input on a pixel-wise level. These perceptual evaluations provide practical insights that go beyond the theoretical loss terms presented in \cref{sec:variational_inference}.
 
-
-
-Figure~\ref{fig:vae_loss_comparison_1} and Figure~\ref{fig:vae_loss_comparison_2} provides a side-by-side comparison of all key metrics for both VAE models trained with Log-Cosh and MSE losses. 
+Figure~\ref{fig:vae_loss_comparison_1} and Figure~\ref{fig:vae_loss_comparison_2} provide a side-by-side comparison of these key metrics for both VAE models trained with Log-Cosh and MSE losses.
 
 \begin{figure}[p]
     \centering
@@ -664,7 +656,7 @@ These results indicate that while LIME on Latent feature masking contributes mar
 
 
 \subsection{Validity of Counterfactual Explanations}
-Table~\ref{tab:ce_validity} presents the percentage of valid counterfactuals per masking method---i.e., cases where the predicted class changed post-masking while maintaining high-quality reconstruction. In this work, a counterfactual is considered valid if it alters the model’s output to the desired target class (e.g., from \texttt{STOP} to \texttt{GO}, or from \texttt{RIGHT} to \texttt{LEFT}).
+As discussed in section~\ref{subsec:background_desirable_properties_of_CEs}, validity is a crucial metric for assessing counterfactual explanations. Table~\ref{tab:ce_validity} presents the percentage of valid counterfactuals per masking method---i.e., cases where the predicted class changed post-masking while maintaining high-quality reconstruction. In this work, a counterfactual is considered valid if it alters the model’s output to the desired target class (e.g., from \texttt{STOP} to \texttt{GO}, or from \texttt{RIGHT} to \texttt{LEFT}).
 
 The validity percentage is computed using the following formula:
 
@@ -690,32 +682,25 @@ LIME on Latent NUN& \textbf{94.88} & \textbf{97.44} & Highest performance and ge
 \label{tab:ce_validity}
 \end{table}
 
-These findings indicate that LIME on Latent NUN based masking is consistently effective across both binary and multi-class settings. The Grid-Based method performs well in multi-class but is less effective in binary scenarios when finer granularity is required.
+As seen in Table~\ref{tab:ce_validity}, the LIME on Latent NUN method achieves the highest validity, confirming its effectiveness in producing meaningful and causally influential perturbations. This supports its alignment with the theoretical definition of a "valid counterfactual" described in the background (Section~\ref{subsec:background_desirable_properties_of_CEs}). On the other hand, traditional LIME on Latent (Median) shows poor validity despite being sparse indicating that minimal changes do not necessarily result in effective counterfactuals unless they target truly causal dimensions.
 
 
 
 \subsection{Sparsity and Proximity Analysis}
 
-To further assess the minimality and fidelity of generated counterfactual explanations, two commonly used metrics were evaluated: \textbf{Sparsity} and \textbf{Proximity}. These metrics help quantify how localized the changes are (sparsity) and how similar the counterfactual is to the original input (proximity), both of which are essential criteria for human-acceptable and interpretable counterfactuals.
+Sparsity and proximity are important dimensions of interpretability, as discussed in Section~\ref{subsec:background_desirable_properties_of_CEs}. Sparsity refers to the number of features or regions modified to achieve a prediction change, while proximity quantifies the similarity between the original and counterfactual instances, typically using the L2 distance in latent space. These two metrics jointly reflect how minimally and plausibly a counterfactual modifies the original input—a crucial consideration for trust and usability in real-world AI systems~\cite{Singh1622975}.
 
-\begin{itemize}
-    \item \textbf{Sparsity} refers to the number of features or regions that were modified to flip the prediction. 
-    \begin{itemize}
-        \item In \textit{LIME on Latent feature masking (Median)} and \textit{LIME on Latent using NUN}, sparsity was calculated as the number of latent dimensions replaced. These values were logged during counterfactual generation under the column Features Replaced.
-        \item For \textit{Grid-Based Masking}, sparsity was computed based on the number of grid patches masked in the image. Since the masking method stores the number of masked patches explicitly (e.g., 3 out of 128 patches), these values were extracted from the masked patches column in the output logs\footnote{\url{https://github.com/darshandodamani/A-Counterfactual-Explanation-Approach-Using-Deep-Generative-Models/tree/main/results/masking}}.
-        \item In \textit{LIME on Image}, the sparsity was treated as 128 in all cases, since masking the image space typically involved zeroing out all LIME-selected superpixels, leading to maximum perturbation.
-    \end{itemize}
-    
-    \item \textbf{Proximity} measures the L2 distance between the original and counterfactual samples. 
-    \begin{itemize}
-        \item In all methods, proximity was computed in the \textbf{latent space} as the Euclidean (L2) norm between the original latent vector $\mathbf{z}$ and the masked/reconstructed counterfactual latent vector $\mathbf{z'}$:
-        \[
-        \text{Proximity} = \|\mathbf{z} - \mathbf{z'}\|_2
-        \]
-        \item This ensures consistent comparison across methods since all counterfactuals are ultimately evaluated in the same latent space, where the classifier operates. The proximity values were logged for each generated counterfactual.
-    \end{itemize}
-\end{itemize}
+In this work, sparsity was defined based on the domain in which the masking was applied. For latent space methods such as LIME on Latent (Median) and LIME on Latent using NUN, sparsity was computed as the number of latent dimensions replaced during counterfactual generation. These values were logged in the output files under the “Features Replaced” column. For Grid-Based Masking, sparsity was computed as the number of image grid patches masked. These grid indices were explicitly stored in the results logs\footnote{\url{https://github.com/darshandodamani/A-Counterfactual-Explanation-Approach-Using-Deep-Generative-Models/tree/main/results/masking}} and retrieved to compute average sparsity per instance. In the case of LIME on Image, sparsity was assigned a fixed value of 128, as all superpixels selected by LIME were masked at once, representing maximum perturbation across the image space.
 
+Proximity, on the other hand, was computed uniformly across all methods in the latent space. Specifically, it was calculated as the Euclidean (L2) distance between the original latent vector $\mathbf{z}$ and the re-encoded counterfactual latent vector $\mathbf{z'}$, as follows:
+
+\[
+\text{Proximity} = \|\mathbf{z} - \mathbf{z'}\|_2
+\]
+
+This ensures that comparisons are fair and consistent, regardless of whether the masking was applied in the image space or the latent space. Since classification occurs in the latent space, this choice of proximity metric directly reflects how much the latent semantics change as a result of the intervention.
+
+\vspace{1em}
 \begin{table}[htbp]
 \centering
 \small
@@ -733,15 +718,13 @@ LIME on Image            & 128.0   & 25.2  & 87.65 & 12.35 \\
 \label{tab:sparsity_proximity}
 \end{table}
 
-\vspace{0.8em}
+LIME on Latent (Median) stands out as the sparsest method, requiring minimal intervention to generate counterfactuals. However, its limited effectiveness is reflected in poor CE coverage and high failure rate (Table~\ref{tab:ce_validity}), indicating that overly simplistic changes may fail to achieve meaningful prediction flips. In contrast, LIME on Latent NUN modifies more features on average, yet offers significantly better validity and class coverage, highlighting its ability to generate targeted and semantically rich counterfactuals.
 
-While sparsity and proximity are core evaluation metrics in counterfactual explanation literature, their reliability varies depending on the domain of intervention. In latent-space masking methods, these metrics are well-defined and tractable: sparsity corresponds to the count of altered latent dimensions, and proximity is computed as the Euclidean distance between original and counterfactual latent vectors—both of which lie in a structured, continuous space learned by the VAE.
+As described earlier in Section~\ref{subsec:background_desirable_properties_of_CEs}, low proximity is desirable as it implies that the counterfactual remains close to the original instance, preserving realism and interpretability. From this perspective, LIME on Latent (Median) shows the best proximity score, but again, with the trade-off of low success rate. Grid-Based Masking and LIME on Latent NUN offer a better balance, providing competitive proximity while maintaining high coverage and success rates.
 
-However, for image-based masking techniques such as grid masking and LIME on image, these metrics become less interpretable. Sparsity in image space reflects the number of masked regions but does not consider their semantic content or spatial impact. More critically, proximity is computed in latent space after re-encoding the masked image. Since masked inputs may fall outside the VAE's training distribution, the resulting proximity values can be distorted due to artifacts introduced during reconstruction.
+It is worth noting that while sparsity and proximity are reliable metrics for latent-space interventions, they are less meaningful in image space due to the nature of VAE reconstruction. For image-based methods like LIME on Image or Grid-Based Masking, masked regions can introduce artifacts or out-of-distribution distortions, which propagate through the encoder and affect proximity values. As a result, although proximity is consistently reported for all methods, its interpretability is strongest for latent-based techniques, where both the intervention and evaluation occur in a structured and learned representation space.
 
-Therefore, while we report sparsity and proximity across all methods for completeness, we emphasize that these metrics are most meaningful and comparable within latent-space masking pipelines.
-
-
+These differences are further discussed in Section~\ref{subsubsec:qualitative_examples}, where qualitative visualizations help clarify the implications of masking induced distortions and their influence on semantic plausibility. Overall, sparsity and proximity remain essential for comparing methods, but must be interpreted in the context of where the intervention occurs and how reconstruction artifacts might affect the underlying latent semantics.
 
 
 \subsection{Per-Class Counterfactual Explanantions Success}
@@ -773,7 +756,9 @@ The table shows that while most methods effectively capture STOP and GO transiti
 
 
 \subsection{Efficiency: Time Complexity and Execution Time}
-Although LIME on Latent NUN based masking produces high-quality explanations, it is the most computationally expensive, with a total runtime exceeding 263 minutes. In contrast, the Grid-Based method completes in just 13 minutes while still achieving competitive coverage and validity.
+As discussed in the Background (see Section~\ref{subsec:background_desirable_properties_of_CEs}), one of the desirable properties of a counterfactual explainer is \textit{efficiency} the ability to generate explanations within a reasonable time, particularly in real-time or interactive systems like autonomous driving. In this evaluation (Section~\ref{sec:masking_eval}), we observe significant variation in execution times across the proposed methods.
+
+While the LIME on Latent NUN approach consistently produced the highest-quality and most valid counterfactuals, it was also the most computationally expensive, requiring over 263 minutes to process the entire dataset. In contrast, Grid-Based Masking achieved nearly equivalent performance in terms of coverage and validity but completed in just 13 minutes. This highlights the trade-off between explanation quality and computational efficiency—an important consideration when selecting methods for deployment in time-sensitive applications.
 
 
 
@@ -849,20 +834,20 @@ Representative counterfactual explanations across different masking methods. In 
 Together, these qualitative comparisons reinforce the quantitative results presented earlier (Figures~\ref{fig:bar_chart_ce_count_multi}--\ref{fig:venn_comparison}). In particular, LIME on Latent based masking using NUN method consistently generates the most faithful and effective counterfactual explanations. The visual clarity and semantic integrity of its outputs further confirm its practical utility for explainability in autonomous driving models.
 
 
-\subsection{Discussions on Counterfactual Explanation Generation via
-Masking Techniques}
-The results demonstrates that:
-\begin{itemize}
-    \item LIME on Latent feature based masking using NUN method is the most effective method overall, generating high-quality, class-discriminative, and valid counterfactual explanations across all driving actions . But, computationally expensive.
-    \item Grid-Based Masking provides a strong baseline with significantly lower computation time and excellent multi-class performance.
-    \item LIME on Latent feature based masking is limited in both coverage and interpretability.
-    \item Although LIME based masking on Images performs well in certain scenarios, its higher execution time and lower effectiveness for LEFT transitions reduce its appeal. For visual purpose these images are really distorted and added with more noise after reconstruction, the reason is because after the masking LIME covers most of the important region where it is masked the pixels with zero. The VAE is not trained on these kind of images the reconstrcutions are really bad.
-    \item Objcet detection based masking on images performs very bad as YOLO v5 models fails to detect the objects in the dataset. This further failed in masking the objects which led to failure in the counterfatual explanantiosn generation. 
-\end{itemize}
+\subsection{Discussions on Counterfactual Explanation Generation via Masking Techniques}
 
-From a minimality perspective, LIME on Latent (Median) produces the sparsest counterfactuals (average 2.3 features changed), but struggles with validity and coverage. In contrast, LIME on Image alters all patches (sparsity = 128), leading to poor reconstructions and less interpretable outcomes. Grid-Based and LIME on Latent NUN strike a favorable balance—offering low proximity and moderate sparsity with strong validity and broad coverage. This highlights that effective counterfactuals should not only change predictions but also introduce minimal, semantically meaningful changes that are interpretable and actionable.
+The experimental results provide a comprehensive comparison of the five masking-based counterfactual generation techniques and highlight clear trends in their relative strengths and limitations. Among all evaluated methods, LIME-guided latent feature masking using Nearest Unlike Neighbor (NUN) emerged as the most effective approach. It consistently produced high-quality counterfactuals that were both class-discriminative and semantically aligned with the original input, demonstrating superior performance across nearly all evaluation metrics. However, this method comes with a notable trade-off—its computational cost. With an average runtime exceeding 263 minutes for the full dataset, it poses challenges for deployment in time-sensitive or real-time environments.
 
-These results strongly support the adoption of latent-space counterfactual techniques particularly LIME on Latent feature based masking using NUN method for enhanced explainability in autonomous driving models.
+Grid-Based Masking, on the other hand, offered a compelling alternative. While slightly less effective in terms of semantic richness and interpretability, it excelled in coverage, speed, and visual coherence. With an execution time of just 13 minutes and near-perfect class-wise counterfactual success, it serves as a strong baseline that balances performance and practicality, especially for multi-class prediction tasks in autonomous driving.
+
+In contrast, LIME-based masking on latent features (with median replacement) exhibited significant limitations. Although it achieved the lowest average sparsity changing as few as 2.3 latent dimensions per counterfactual—it suffered from poor validity and limited coverage. This suggests that minimal changes alone are not sufficient if they fail to meaningfully influence the classifier's decision boundary. Similarly, LIME on Image, while more successful in terms of coverage, produced counterfactuals with very high sparsity (treated as 128), resulting in distorted reconstructions and poor interpretability. The primary issue here stems from the masking strategy itself—zeroing out critical image regions leads to unnatural artifacts that the VAE, not trained on such distributions, cannot realistically reconstruct. This severely limits its practical value, particularly for scenes requiring subtle visual coherence.
+
+Object Detection-based Masking performed the worst overall. The main bottleneck was the failure of YOLOv5 to consistently detect relevant objects in the CARLA dataset, leading to unreliable or incomplete masking. As a result, this method frequently failed to generate valid counterfactuals and was excluded from certain evaluations due to insufficient sample coverage.
+
+From a minimality perspective, LIME on Latent (Median) remains the most sparse technique but falls short in altering the classifier’s prediction. LIME on Image, by contrast, modifies the entire image with excessive masking, compromising realism. Grid-Based and LIME on Latent NUN methods demonstrate the most promising trade-offs, achieving a favorable balance between sparsity, proximity, validity, and execution time. These findings reinforce that counterfactual explanations must not only flip the model's prediction but do so through changes that are visually plausible, semantically meaningful, and computationally viable.
+
+Taken together, the results strongly advocate for latent-space based masking techniques particularly LIME on Latent using NUN as the most interpretable and effective strategy for counterfactual generation in autonomous driving settings as shown in this thesis. While further optimization is required to reduce its computational overhead, this approach holds considerable promise for enhancing transparency and trust in real-world decision-making systems.
+
 
 
 

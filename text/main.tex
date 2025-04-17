@@ -17,12 +17,12 @@ Deep generative models, such as Variational Autoencoders (VAEs), are widely used
 
 One promising approach to improving model interpretability is through counterfactual explanations (CEs), which identify minimal changes required to alter a model’s output. Counterfactuals provide human-interpretable insights by highlighting influential features, offering a compelling alternative to traditional attribution methods. In this thesis, I propose a novel counterfactual explanation framework that leverages a deep generative model (VAE) in combination with various feature masking strategies to generate CEs for black-box classifiers. By altering input images or their latent representations, the framework identifies minimal and semantically plausible perturbations that can change a classifier’s decision, revealing features with a causal influence on the model’s predictions.
 
-To evaluate this approach, experiments are conducted using simulated driving data from the CARLA environment, covering both binary and multi-class decisions such as STOP, GO, LEFT, and RIGHT. The generated counterfactuals are assessed using quantitative metrics and visual inspection to evaluate plausibility, visual realism, and interpretability. Additionally, a human evaluation study was conducted through a web-based interface to measure user trust in the generated explanations. Results indicate that latent-space interventions—particularly those guided by LIME with nearest-neighbor support—as well as grid-based image masking, were consistently rated as the most trustworthy and informative by participants. This work contributes to the broader field of explainable AI by advancing interpretable model analysis for decision-making in autonomous systems.
+To evaluate this approach, experiments are conducted using simulated driving data from the CARLA environment, covering both binary and multi-class decisions such as STOP, GO, LEFT, and RIGHT. The generated counterfactuals are assessed using quantitative metrics and visual inspection to evaluate plausibility, visual realism, and interpretability. Additionally, a human evaluation study was conducted through a web-based interface to measure user trust in the generated explanations. Results indicate that latent-space interventions particularly those guided by LIME with nearest-neighbor support as well as grid-based image masking, were consistently rated as the most trustworthy and informative by participants. This work contributes to the broader field of explainable AI by advancing interpretable model analysis for decision-making in autonomous systems.
 
 The complete implementation of this framework is available at \href{https://github.com/darshandodamani/A-Counterfactual-Explanation-Approach-Using-Deep-Generative-Models} {github}.
 
 \textbf{Keywords:}
-Counterfactual Explanations, Explainable AI, Variational Autoencoders, Latent Space Manipulation, LIME, Human-Centered Evaluation, Masking, Trust in AI, Autonomous Driving, Black-box Classifier, Visual Interpretability
+Counterfactual Explanations, Explainable AI, Variational Autoencoders, Latent Space Manipulation, LIME, Human-Centered Evaluation, Masking, Trust in AI, Autonomous Driving, Black-box Classifier, Visual Interpretability.
 \end{abstract}
 
 \clearpage
@@ -112,10 +112,12 @@ Thank you all for being part of this milestone.
 \input{text/Evaluation and Results.tex}
 
 \cleardoublepage
+\ifodd\value{page}\null\thispagestyle{empty}\newpage\fi
 \chapter{Related Work} \label{Related work}
 \input{text/Related work.tex}
 
 \cleardoublepage
+\ifodd\value{page}\null\thispagestyle{empty}\newpage\fi
 \chapter{Conclusion and Future Scope} \label{Conclusion and Future Scope}
 \input{text/Conclusion and Future Scope.tex}
 

@@ -13,59 +13,89 @@ To investigate how reconstruction losses affect model performance, two VAE varia
 
 \section{Answering RQ3: Comparative Evaluation of Masking-Based Counterfactuals}
 
-Five masking-based CE generation strategies were proposed and evaluated in which three operating in image space (Grid-Based, Object Detection, LIME on Image) and two in latent space (LIME on Latent Features, LIME on Latent Features using NUN). A unified pipeline was developed to ensure methodological consistency across all techniques.
+To address RQ3, this work implemented and evaluated five distinct counterfactual generation strategies based on masking methods. These included three methods operating in the image space Grid-Based Masking, Object Detection-Based Masking, and LIME on Image based masking and two in the latent space LIME on Latent Features Masking and LIME on Latent Features using Nearest Unlike Neighbor (NUN). A unified pipeline ensured consistent evaluation by applying each masking technique to the same input samples, VAE encoder, and classifier model.
 
-Evaluation across multiple dimensions counterfactual explanations coverage, failure rate, runtime, proximity, sparsity, and method overlap—revealed that:
+Across a comprehensive set of evaluation dimensions namely coverage, failure rate, runtime, proximity, sparsity, and method overlap the LIME on Latent NUN approach emerged as the most effective technique. It achieved 97.44\% valid counterfactual coverage in the multi-class setup, maintained a balanced per-class success rate, and generated visually coherent and semantically meaningful counterfactuals. However, these benefits came at the cost of computational efficiency, with a total runtime exceeding 263 minutes for the test dataset.
 
-\begin{itemize}
-    \item \textbf{LIME on Latent NUN} was the most effective, achieving high CE coverage (97.44\%), class-wise balance, and realistic counterfactuals, albeit with the highest runtime.
-    \item \textbf{Grid-Based Masking} emerged as a strong, fast baseline (coverage = 98.89\%, runtime = 13 min) with excellent interpretability and semantic targeting.
-    \item \textbf{LIME on Image} produced visually noisy outputs with low interpretability and high distortion due to aggressive masking of critical regions.
-    \item \textbf{LIME on Latent (Median)} generated the sparsest and most localized perturbations (avg. 2.3 features), but had poor validity and coverage.
-    \item \textbf{Object Detection Masking} performed poorly due to low detection rates in the dataset.
-\end{itemize}
+Grid-Based Masking, in contrast, delivered near-equivalent coverage (98.89\%) while requiring only 13 minutes to process the entire dataset. It excelled in interpretability and spatial targeting, producing explanations that were both localized and visually intuitive. Despite introducing occasional artifacts, it remains a practical and scalable solution.
 
-These results demonstrate that counterfactual quality depends not only on prediction change but also on visual fidelity, minimality, and semantic plausibility especially in high-stakes domains like autonomous driving. The LIME on Latent NUN method best balances these trade-offs, thereby answering RQ3.
+LIME on Image struggled to match these results. Although it achieved high counterfactual validity for certain classes like STOP and GO, the generated images often appeared heavily distorted. The aggressive masking of salient regions replacing large superpixels with blacked-out patches frequently led to unrealistic reconstructions due to the VAE’s limited exposure to such patterns during training. As a result, interpretability and visual coherence were significantly compromised.
+
+LIME on Latent Features, which employed static median replacements for influential latent dimensions, produced the sparsest counterfactuals (averaging only 2.3 features changed) and the lowest proximity. However, this came at the cost of poor counterfactual coverage and high failure rates. While minimal in intervention, this method lacked the robustness required to reliably flip predictions.
+
+Finally, Object Detection-Based Masking underperformed due to the failure of YOLOv5 to detect critical semantic entities (e.g., traffic signs, pedestrians) in many CARLA generated scenes. Consequently, the method produced few valid counterfactuals and was excluded from the user study due to inadequate coverage.
+
+These findings demonstrate that effective counterfactual explanations must not only flip predictions but do so with minimal, plausible, and interpretable alterations particularly in safety-critical domains like autonomous driving. Among all methods studied, the LIME on Latent Features using NUN approach offered the most balanced trade-off between semantic fidelity, coverage, and human interpretability, thus providing the most reliable counterfactuals and satisfactorily answering RQ3.
 
 \section{Answering RQ4: Human-Centered Evaluation of Explanation Preferences}
 
-To evaluate real-world preference and interpretability, a web-based user study was conducted with four masking-based counterfactual methods. Participants rated CEs on three dimensions: interpretability, plausibility, and visual coherence.
+To address RQ4, a human-centered evaluation was conducted through a web-based user study designed to assess the subjective quality of counterfactual explanations generated by four masking-based methods (excluded object detection based masking method). Participants were shown original driving scene images alongside counterfactual versions and asked to rate each explanation along three core dimensions: interpretability, plausibility, and visual coherence. These criteria were selected to reflect both the cognitive ease with which users could understand the rationale behind a prediction change and the visual quality of the modified images.
 
-Results showed that:
+Among the evaluated techniques, Grid-Based Masking received the highest scores in interpretability (4.32) and visual coherence (4.16). Participants consistently appreciated its structured and localized perturbations, which provided clear insights into the model’s decision boundaries without heavily distorting the input image. LIME on Latent Features using Nearest Unlike Neighbor (NUN) achieved the highest rating in plausibility (3.96), reflecting its ability to produce semantically meaningful and realistic modifications in the latent space while still achieving class changes. This method was also recognized for its balance between quality and effectiveness, offering counterfactuals that felt natural yet impactful.
 
-\begin{itemize}
-    \item \textbf{Grid-Based Masking} was rated highest in interpretability (4.32) and visual coherence (4.16), praised for structured, minimal changes.
-    \item \textbf{LIME on Latent NUN} scored highest in plausibility (3.96) and offered the best balance between realism and decision change.
-    \item \textbf{LIME on Image} consistently received the lowest ratings across all dimensions, due to unnatural reconstructions and over-masking.
-\end{itemize}
+In contrast, LIME on Image consistently scored the lowest across all criteria, with a particularly poor average of 1.00 in every category. Participants frequently criticized these outputs for being visually implausible, overly masked, and devoid of detail. The method’s tendency to black out large superpixels resulted in severe information loss, making it difficult for users to interpret or trust the resulting explanations.
 
-Qualitative user feedback validated the metrics: participants highlighted realism and minimalism as key qualities for understandable counterfactuals. These findings demonstrate the importance of aligning algorithmic explanations with human intuition, thereby answering RQ4.
+Qualitative feedback supported the numerical findings. Users emphasized the value of realism and minimalism, noting that the most compelling counterfactuals were those that preserved the contextual elements of the scene while making minimal, yet semantically significant, modifications. Overall, the study confirmed that algorithmic explanations must align with human interpretability expectations to be considered truly effective. The consistent preference for Grid-Based Masking and LIME on Latent NUN demonstrates that explanation methods that are both visually coherent and conceptually intuitive are better suited for deployment in safety-critical domains like autonomous driving. These findings collectively answer RQ4 by highlighting the human factors that govern the usefulness and acceptance of counterfactual explanations in practice.
 
 \section{Thesis Contributions}
 
-The main contributions of this thesis are:
-\begin{itemize}
-    \item A unified, modular framework for generating and evaluating image-based counterfactuals in autonomous driving.
-    \item A comparative study of five masking strategies, with rigorous evaluation using both algorithmic metrics and human preferences.
-    \item An effective integration of LIME and NUN in latent space, producing high-quality, semantically grounded counterfactuals.
-    \item A web-based tool and human-centered evaluation protocol for future research in explainability.
-\end{itemize}
+This thesis makes several key contributions toward the goal of interpretable and human-aligned decision explanation in autonomous driving. First, it proposes a unified and modular framework for generating counterfactual explanations based on image inputs, leveraging a Variational Autoencoder (VAE) as the generative backbone. This pipeline supports both image-space and latent-space masking strategies, enabling a fair comparison across different counterfactual generation techniques. Second, the work presents a detailed comparative study of five such masking approaches including Grid-Based Masking, LIME on Images, LIME on Latent Features, Object Detection-Based Masking, and LIME on Latent Features using Nearest Unlike Neighbors (NUN) evaluated using a rich set of quantitative metrics and a structured human preference study.
+
+A core technical contribution lies in the integration of LIME and the NUN concept in the VAE’s latent space, resulting in a method that generates high-quality, semantically coherent counterfactuals while preserving minimality and interpretability. This latent-space approach is demonstrated to be especially effective in high-stakes, perception-driven environments such as autonomous driving, where decision traceability is critical. Additionally, the thesis introduces a web-based evaluation interface and a human-centered experimental protocol that can be reused and extended in future work on explainable artificial intelligence (XAI). Together, these contributions provide a robust foundation for generating, analyzing, and validating counterfactual explanations in real-world machine learning systems.
 
 
 \subsection{From Real-World Motivation to Practical Impact}
 This work was motivated by the critical need for transparency in AI-based decision-making in autonomous vehicles explained in introduction (ref ~\ref{Introduction}). Real-world tragedies such as the fatal incident involving an autonomous Uber in Arizona~\autocite{marshall2019uber}, where an object was misclassified as a harmless obstacle highlight the severe consequences of unexplainable model failures. In such high-stakes scenarios, it is not enough for the system to make a prediction, it must also provide insight into why that prediction was made. The proposed framework addresses this gap by enabling counterfactual explanations that expose the minimal, causally important changes in input responsible for altering the model's decision. By reconstructing semantically coherent and visually interpretable explanations, this system offers a path toward greater transparency, accountability, and ultimately safer deployment of AI in autonomous systems.
 
 
+\section{Threats to Validity} \label{sec:threats_to_validity}
+
+While the evaluation conducted in this thesis is comprehensive and spans both quantitative and human-centered assessments, certain methodological and contextual limitations could influence the generalizability and reliability of the results. This section outlines the primary threats to validity categorized by source.
+
+\vspace{-1em}
+
+\paragraph{Simulation-Only Dataset.} All training and evaluation data were collected from the CARLA simulator. While this environment offers precise control and reproducibility, it lacks the full spectrum of environmental variability, sensor noise, and domain complexity present in real-world autonomous driving datasets. Consequently, some findings especially related to reconstruction quality and counterfactual plausibility may not fully translate to real-world driving contexts. We can observe these in the Appendix~\ref{appendix:comparison}.
+
+\vspace{-1em}
+
+\paragraph{Object Detection Generalization.} The object detection-based masking strategy relies on YOLOv5 pre-trained on the COCO dataset. However, YOLOv5 showed poor performance on CARLA-rendered scenes due to domain mismatch. As a result, valid objects such as STOP signs or vehicles were frequently undetected, leading to lower counterfactual success rates. This limits the fairness and completeness of the comparative evaluation of masking techniques.
+
+\vspace{-1em}
+
+\paragraph{Latent Space Overlap.} The VAE was trained in an unsupervised fashion without access to class labels. While this avoids label leakage, it also resulted in latent representations that were not strongly class-disentangled particularly for visually similar classes like \texttt{GO} and \texttt{LEFT}. This overlap may reduce classifier performance and obscure the causal interpretability of latent-space counterfactuals.
+
+\vspace{-1em}
+
+\paragraph{Fixed Masking Parameters.} Several methods used static thresholds for masking (e.g., top-$k$ LIME features, grid cell resolution, or median value substitutions). These hard-coded design choices may not adapt well across different images, class distributions, or feature configurations. This could affect the minimality, plausibility, or stability of generated counterfactuals.
+
+\vspace{-1em}
+
+\paragraph{VAE Reconstruction Artifacts.} All counterfactual pipelines involve reconstructing a masked or altered latent vector via the VAE decoder. In scenarios with high perturbation (especially LIME on Image), the decoder sometimes produces blurred or unrealistic outputs. These artifacts may introduce unintended prediction changes or degrade the visual interpretability of the counterfactuals potentially biasing both algorithmic and human evaluations.
+
+\vspace{-1em}
+
+\paragraph{Metric Interpretability in Image Space.} Metrics such as sparsity and proximity are well-defined in the latent space due to its continuous structure. However, for image-based masking techniques, proximity values are computed post-VAE re-encoding, which may introduce artifacts that distort actual similarity. Thus, cross-method comparisons based on these metrics should be interpreted cautiously.
+
+\vspace{-1em}
+
+\paragraph{Limited Human Study Scale.} Although the user study captured valuable qualitative and quantitative feedback, it was limited in scale and diversity of participants. Broader studies across different user groups (e.g., domain experts, non-experts) would yield more robust insights into human-centered interpretability preferences.
+
+These threats do not undermine the validity of the study, but they emphasize that the results should be viewed as foundational within a simulation-driven, VAE-centric setting. Future extensions can address these concerns through real-world data integration, semantic supervision, and adaptive masking mechanisms.
 
 
 \section{Limitations} \label{sec:limitations}
-Despite its contributions, this thesis has several limitations that merit consideration. First, all experiments were conducted using the CARLA simulator, which although diverse and realistic in structure may not capture the full variability and complexity of real-world urban driving environments. Consequently, generalizability to real-world datasets remains untested. Second, the object detection-based masking method underperformed primarily due to YOLOv5’s limited generalization on CARLA-generated scenes. Its inability to reliably detect key objects like traffic signs or pedestrians often resulted in incomplete or failed counterfactual explanations.
+Despite its contributions, this thesis has several limitations that merit consideration. First, all experiments were conducted using the CARLA simulator, which—although diverse and structurally realistic—may not capture the full variability and complexity of real-world urban driving environments. Consequently, generalizability to real-world datasets remains untested.
 
-Third, while the VAE succeeded in compressing visual scenes into semantically useful latent vectors, certain classes particularly \texttt{GO} exhibited significant overlap in the latent space. This latent entanglement posed challenges for both classification and counterfactual generation. Additionally, the classifiers used in this study were trained exclusively on VAE-generated latent representations. Incorporating ensemble learning or multimodal inputs (e.g., raw images, or object metadata) could improve overall robustness and interpretability.
+Second, the object detection-based masking method underperformed primarily due to YOLOv5’s limited generalization on CARLA-rendered scenes. Its inability to reliably detect key objects such as traffic signs or pedestrians often resulted in incomplete or failed counterfactual explanations.
 
-Furthermore, evaluation metrics like proximity and sparsity while well-defined in the structured latent space—were less meaningful in image-space interventions. Due to the artifacts introduced during re-encoding of masked images, these metrics may not reliably reflect the true semantic or perceptual closeness between original and counterfactual samples. Another limitation stems from the static thresholding applied in LIME-based methods. Selecting a fixed number of top-$k$ influential features or using dataset-level medians may not generalize across different tasks or datasets, limiting adaptability. 
+Third, while the VAE succeeded in compressing visual scenes into semantically useful latent vectors, certain classes—particularly \texttt{GO}—exhibited significant overlap in the latent space. This latent entanglement posed challenges for both classification and counterfactual generation. Moreover, all classifiers in this study were trained exclusively on VAE-generated latent representations. Incorporating ensemble learning or multimodal inputs (e.g., raw images or object-level metadata) could improve overall robustness and interpretability.
 
-Finally, the most effective counterfactual method—LIME-guided latent feature masking using Nearest Unlike Neighbor (NUN) was also the most computationally expensive. Its high runtime (over 263 minutes for a full dataset) poses a constraint for real-time or large-scale deployment. These limitations open several avenues for improvement, which are discussed in the following section.
+Furthermore, evaluation metrics like proximity and sparsity, though well-defined in latent space, are less meaningful in image-space interventions. Artifacts introduced during the re-encoding of masked images may distort the perceived closeness between original and counterfactual samples. Another limitation stems from the static thresholding used in LIME-based methods. Selecting a fixed number of top-$k$ influential features or applying global median values may not generalize well across different tasks or datasets, limiting adaptability and personalization.
+
+Finally, the most effective counterfactual method—LIME-guided latent feature masking using Nearest Unlike Neighbor (NUN)—was also the most computationally expensive. Its runtime (over 263 minutes for full dataset processing) poses a constraint for real-time or large-scale deployment.
+
+These limitations open several avenues for improvement, which are discussed in the following section.
+
 
 \section{Future Scope} \label{sec:future_scope}
 

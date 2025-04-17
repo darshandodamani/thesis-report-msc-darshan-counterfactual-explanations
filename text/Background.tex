@@ -29,7 +29,7 @@ a valid and realistic counterfactual might suggest a slight reduction of brightn
 b(x') = \text{"Speed Limit Sign"}.
 \end{equation}
 
-\subsection{Desirable Properties of Counterfactual Explanations}
+\subsection{Desirable Properties of Counterfactual Explanations} \label{subsec:background_desirable_properties_of_CEs}
 Counterfactual explanations are evaluated based on several key desirable properties~\cite{guidotti2022counterfactual}, each ensuring usefulness, interpretability, and practicality:
 
 \begin{enumerate}
@@ -61,32 +61,32 @@ Counterfactual explanations are evaluated based on several key desirable propert
     Counterfactual recommendations must suggest feasible and realistic actions. For instance, suggesting increasing income or clearing existing debts is actionable for loan approval scenarios, whereas altering immutable features like age or gender is neither practical nor ethical.
 \end{enumerate}
 
+
+
 \subsection{Desirable Properties of Counterfactual Explainers}
-Besides individual counterfactual properties, it is equally important to assess the algorithm generating them, referred to as a \textit{counterfactual explainer}. Desirable properties of a good counterfactual explainer include:
+A counterfactual explainer is the algorithm or system responsible for generating counterfactual instances. In evaluating such explainers, especially in safety-critical domains like autonomous driving, certain properties are considered desirable. While many of these properties have been proposed in the broader XAI literature~\cite{guidotti2022counterfactual, DELANEY2023103995}, in this thesis we focus on those directly measurable and relevant to our proposed masking-based methods.
 
-\begin{enumerate}
-    \item \textbf{Efficiency:}  
-    Counterfactual explanations must be generated rapidly, particularly for real-time decision-making scenarios like autonomous driving. An inefficient explainer can render explanations impractical for live diagnostic purposes.
+\begin{itemize}
+    \item \textbf{Effectiveness:} The ability to consistently generate valid counterfactuals across all classes. The more effective the explainer the more industries prefer the algorithm to implement in real time.
 
-    \item \textbf{Stability (Robustness):}  
-    A stable explainer generates similar counterfactual explanations for similar input instances. If minor changes in input lead to significantly different explanations, trust in the explainer diminishes. Stability ensures reliability and consistency across explanations. High stability increases trust in the explainer and prevents inconsistencies in decision-making \cite{9660058} \cite{Kanamori:AISTATS2022}.
+    \item \textbf{Efficiency} refers to the computational time and resources needed to generate explanations. For real-time interpretability in autonomous systems, fast generation is critical.
 
-    \item \textbf{Fairness:}  
-    Counterfactual explainers should not produce biased or unfair recommendations across different demographic groups. For instance, if a financial decision is influenced by demographic factors, leading to different counterfactual outcomes for similar input instances, the explainer fails the fairness criterion. Detailed discussions on fairness constraints in counterfactual explanations are provided by Kusner et al.~\cite{DBLP:journals/corr/abs-2010-10596} and many other authors.
-\end{enumerate}
+    \item \textbf{Semantic Targeting:} A good explainer should modify only the causal parts of the image or latent representation.
+
+    \item \textbf{Sparsity} and \textbf{Minimality} concern how many features are modified in generating a counterfactual. Explanations that introduce fewer changes are easier for humans to understand and are more interpretable.
+\end{itemize}
 
 \subsection{Evaluation Metrics for Counterfactual Generation Algorithms}
-Most counterfactual generation algorithms are evaluated based on the desirable properties mentioned above. Although the ideal evaluation would involve a user study to assess real-world usability, research typically uses quantifiable metrics instead~\cite{Singh1622975, DBLP:journals/corr/abs-2010-10596, wang2024counterfactualexplanationsdeeplearningbased}. Common quantitative evaluation metrics include:
+Most counterfactual generation algorithms are evaluated based on the desirable properties mentioned above. Although the ideal evaluation would involve a user study to assess real-world usability, research typically uses quantifiable metrics instead~\cite{Singh1622975, DBLP:journals/corr/abs-2010-10596, wang2024counterfactual}. Common quantitative evaluation metrics include:
 
 \begin{itemize}
     \item \textbf{Validity}: Validity measures the ratio of counterfactuals that actually achieve the desired class label to the total number of counterfactuals generated. This metric is fundamental as it assesses whether the counterfactual successfully flips the prediction to the target class. Without validity, a counterfactual explanation fails its primary purpose of showing how an alternative outcome could be achieved.
     \item \textbf{Proximity:} Average distance between original and counterfactual instances, typically measured using L1, L2 norms, or similar metrics.
     \item \textbf{Plausibility:} Assessment of realism within the data distribution (e.g., reconstruction error using VAEs or distance to nearest neighbors) Typically measured using distance metrics like L1 (Manhattan) or L2 (Euclidean) norms.
-    \item \textbf{Actionability:} Actionability evaluates the proportion of counterfactuals involving feasible changes that users can actually implement. his metric recognizes that not all features can be modified in practice
     \item \textbf{SSIM:} For image-based counterfactual explanations, SSIM provides a perceptually aligned method for measuring similarity between original and counterfactual images. Unlike simple pixel-wise comparisons, SSIM identifies structural information and measures the differences between this information extracted from the two images. 
 \end{itemize}
 
-These metrics provide a systematic and practical way to assess the quality of generated counterfactual explanations.
+These metrics provide a systematic and practical way to assess the quality of generated counterfactual explanations. These properties will be empirically assessed in \cref{Evaluation and Results} section~\ref{sec:masking_eval}.
 
 
 
@@ -121,7 +121,7 @@ Variational Autoencoders, introduced by Diederik P. Kingma and Max Welling in th
 
 A VAE consists of two primary components: a probabilistic encoder and a probabilistic decoder. The encoder compresses input data into a latent representation, while the decoder reconstructs the original data from the latent variables. These two components are parameterized as neural networks and optimized using a variational inference approach.
 
-\subsection{Variational Inference: An Approximate Inference Method}
+\subsection{Variational Inference: An Approximate Inference Method} 
 Variational inference is a technique used in Bayesian statistics and machine learning to approximate intractable posterior distributions. In the context of VAEs, it is employed to approximate the true posterior distribution $p(z|x)$ of the latent variables given the observed data $x$, since direct computation is intractable. Instead of computing the exact posterior, VAEs introduce an approximate distribution $q_\phi(z|x)$, which is parameterized by the encoder network. The objective of variational inference is to find the optimal parameters $\phi$ such that $q_\phi(z|x)$ closely resembles the true posterior $p(z|x)$. This is achieved by minimizing the Kullback-Leibler (KL) divergence between the two distributions:
 \begin{equation}
 D_{KL}(q_\phi(z|x) || p(z|x)) = \mathbb{E}{q\phi(z|x)}[\log q_\phi(z|x) - \log p(z|x)].
@@ -138,7 +138,7 @@ p(x) = \int p(x|z) p(z) dz.
 \end{equation}
 Since computing the exact posterior $p(z|x)$ is intractable due to the complexity of integrating over the latent space, VAEs leverage variational inference to approximate this posterior with a tractable distribution $q_\phi(z|x)$ parameterized by an encoder network.
 
-\subsection{Variational Inference and the Evidence Lower Bound (ELBO)}
+\subsection{Variational Inference and the Evidence Lower Bound (ELBO)} \label{sec:variational_inference}
 To approximate the posterior $p(z|x)$, VAEs introduce a variational distribution $q_\phi(z|x)$, typically chosen as a Gaussian distribution with mean $\mu_\phi(x)$ and variance $\sigma^2_\phi(x)$. The objective is to make $q_\phi(z|x)$ as close as possible to the true posterior by minimizing their Kullback-Leibler (KL) divergence~\cite{stackexchange_kl_vae}:
 \begin{equation}
 D_{KL}(q_\phi(z|x) || p(z|x)) = \mathbb{E}{q\phi(z|x)}[\log q_\phi(z|x) - \log p(z|x)].

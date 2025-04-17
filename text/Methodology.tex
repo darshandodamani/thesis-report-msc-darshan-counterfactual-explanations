@@ -127,7 +127,7 @@ For the \textbf{multi-class scheme}, labels were assigned based on prioritized c
 \end{itemize}
 
 
-These thresholds were empirically determined based on the distribution of control signals in the dataset (see \appref{appendix:labeling}, Table~\ref{tab:label-thresholds} and Figure~\ref{fig:threshold-histograms}). The labeling logic ensured that each image received a mutually exclusive and semantically meaningful label. The labeling process was fully automated, ensuring reproducibility and eliminating manual bias.
+These thresholds were empirically determined based on the distribution of control signals in the dataset (see \cref{appendix:labeling}, Table~\ref{tab:label-thresholds} and Figure~\ref{fig:threshold-histograms}). The labeling logic ensured that each image received a mutually exclusive and semantically meaningful label. The labeling process was fully automated, ensuring reproducibility and eliminating manual bias.
 
 After labeling, the dataset showed natural class imbalance, with STOP and GO dominating and LEFT and RIGHT being underrepresented. To mitigate this, targeted data augmentation was applied to the LEFT and RIGHT classes. Augmentation techniques included horizontal flipping, brightness and contrast adjustment, and slight rotation, preserving semantic integrity while increasing data diversity. Augmented samples retained their original labels, enabling class balancing without compromising label consistency.
 

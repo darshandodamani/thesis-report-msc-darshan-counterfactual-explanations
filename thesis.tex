@@ -11,7 +11,7 @@
 % list authors with name and matrikel number
 \ThesisSetAuthor{Darshan Dodamani (124753)}
 
-\ThesisSetProgramme{Computer Science and Media}
+\ThesisSetProgramme{Digital Engineering}
 \ThesisSetSupervisors{Prof.\ Dr.\ Jan Oliver Ringert, Prof.\ Dr.\ Volker Rodehorst}
 
 \ThesisSetSubmissionDate{14}{04}{2025}
@@ -24,10 +24,10 @@
   bibencoding=utf8,
   hyperref=true,
   isbn=false,
-  maxcitenames=3,
   style=numeric,
   citestyle=numeric,
   sorting=none,
+  maxnames=99  % <-- Ensures all author names are shown
 ]{biblatex}
 \addbibresource{literature.bib}
 \usepackage{booktabs}
@@ -122,6 +122,14 @@
 \newcommand{\appref}[1]{Appendix: \nameref{#1}}
 
 \usepackage{makecell}
+
+
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}} % check mark
+\newcommand{\xmark}{\ding{55}} % x mark
+\usepackage[dvipsnames]{xcolor} % for orange warning
+\usepackage{float} % for [H] placement in table
+
 
 
 
